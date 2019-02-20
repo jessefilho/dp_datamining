@@ -113,6 +113,7 @@ test <- genres_ToSplit[-index,]
 
 ```{r}
 summary(train)
+summary(train$genretype)
 ```
 
 Build the first classfication model with set of training
@@ -121,7 +122,8 @@ Build the first classfication model with set of training
 #to using the command rpat, R will build a tree where Class is to be predicted from the variable presents at the formula
 
 #Model classfication of train
-trainTree_Rock = rpart(Class ~ Rock+tempo+accoustiness+loudness+typegroup, data = train, method = "class")
+#Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness
+trainTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = train, method = "class")
 
 #Plotting the tree of train
 plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
@@ -154,7 +156,7 @@ Build the first classfication model with set of test
 
 
 #Model classfication of train
-testTree_Rock = rpart(Class ~ Rock+tempo+accoustiness+loudness+typegroup, data = test, method = "class")
+testTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = test, method = "class")
 
 #Plotting the tree of train
 plot(testTree_Rock, compress=TRUE, uniform=TRUE)
@@ -197,7 +199,7 @@ for(i in 1:10){
   #Use the test and train data partitions however you desire...
   
   #Model classfication of train
-  trainTree_Rock = rpart(Class ~ Rock+tempo+accoustiness+loudness+typegroup, data = trainData, method = "class")
+  trainTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = trainData, method = "class")
   
   #Plotting the tree of train
   #plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
@@ -242,3 +244,4 @@ print("Err mean: ")
 print(meanError)
 ```
 
+Depend of quality of data...
