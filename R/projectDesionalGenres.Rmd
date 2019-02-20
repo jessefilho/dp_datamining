@@ -5,7 +5,7 @@ output: none
 
 ```{r}
 #Load data
-genres = read.csv(file = 'dataGenre.csv', header = TRUE, na.strings = "?")
+genres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
 #Remove lyrics from this set
 genres$titlesong <- NULL
 #Remove "tempo equals 0, because is not relevante now."
