@@ -1,0 +1,170 @@
+---
+title: "Genre DEMO"
+output: html_notebook
+---
+
+This is the demo for solve Genre problematic. In order to well understand this file was resumed to only show up the data partition and model test.
+
+Main goal of this model:
+- Predict genres based on song features;
+
+
+Considerations:
+
+- "Others" contains among genres known, anothers genres do not categorized.
+- 
+
+
+```{r}
+#Load data
+genres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
+
+#Data Preparation 
+#Remove lyrics from this set
+genres$titlesong <- NULL
+#Remove "tempo equals 0, because is not relevante for now."
+genres <- genres[!genres$tempo <= 45.0 & !genres$tempo >= 250.0,]
+#Remove "Others from type of group, because is not relevante now."
+genres <- genres[!genres$typegroup == "Others",]
+
+genres$Class[genres$genretype=='Others'] <- 0
+genres$Class[genres$genretype=='Rock'] <- 1
+genres$Class[genres$genretype=='Pop'] <- 1
+genres$Class[genres$genretype=='Hip Hop'] <- 1
+genres$Class[genres$genretype=='Jazz'] <- 1
+genres$Class[genres$genretype=='Funk'] <- 1
+genres$Class[genres$genretype=='Folk'] <- 1
+genres$Class[genres$genretype=='Classical'] <- 1
+genres$Class[genres$genretype=='Blues'] <- 1
+genres$Class[genres$genretype=='Country'] <- 1
+genres$Class[genres$genretype=='Electronic'] <- 1
+
+#Create variables of genres
+genres$Rock[genres$genretype=='Rock'] <- TRUE
+genres$Rock[genres$genretype!='Rock'] <- FALSE
+
+genres$Pop[genres$genretype=='Pop'] <- TRUE
+genres$Pop[genres$genretype!='Pop'] <- FALSE
+
+genres$Electronic[genres$genretype=='Electronic'] <- TRUE
+genres$Electronic[genres$genretype!='Electronic'] <- FALSE
+
+genres$HipHop[genres$genretype=='Hip Hop'] <- TRUE
+genres$HipHop[genres$genretype!='Hip Hop'] <- FALSE
+
+genres$Jazz[genres$genretype=='Jazz'] <- TRUE
+genres$Jazz[genres$genretype!='Jazz'] <- FALSE
+
+genres$Funk[genres$genretype=='Funk'] <- TRUE
+genres$Funk[genres$genretype!='Funk'] <- FALSE
+
+genres$Folk[genres$genretype=='Folk'] <- TRUE
+genres$Folk[genres$genretype!='Folk'] <- FALSE
+
+genres$Classical[genres$genretype=='Classical'] <- TRUE
+genres$Classical[genres$genretype!='Classical'] <- FALSE
+
+genres$Country[genres$genretype=='Country'] <- TRUE
+genres$Country[genres$genretype!='Country'] <- FALSE
+
+genres$Blues[genres$genretype=='Blues'] <- TRUE
+genres$Blues[genres$genretype!='Blues'] <- FALSE
+
+
+
+summary(genres$genretype)
+
+summary(genres)
+```
+
+Steps to prepare data for the Classfication Model:
+1. Reduction of the dataset of "Others" for take a proportion;
+2. If necessary viabilization of a set for a 3th test
+
+
+```{r}
+#take a sample of genres "Others"
+#Only 2% from attributes with the label Others
+idx_others <- genres[sample(which(genres$genretype=='Others'),size = 0.02* nrow(genres[which(genres$genretype=='Others'),]) ), ]
+#dataset without the label Others
+dataset_withoutOthers <- genres[!genres$genretype=='Others',]
+#Reattach A small and random data set with Others
+genres_ToSplit <- bind_rows(idx_others,dataset_withoutOthers)
+
+summary(genres_ToSplit)
+```
+
+
+
+2. Split data in 2 dataset:
+2.1 Train
+2.2 Test
+
+```{r}
+# Split between 80 and 30
+index <- sample(1:nrow(genres_ToSplit),size = 0.7* nrow(genres_ToSplit))
+# Use the large partition to training - 70
+train <- genres_ToSplit[index,]
+# Use the small partition to test - 30
+test <- genres_ToSplit[-index,]
+
+```
+
+
+```{r}
+summary(train)
+```
+
+Build the first classfication model with set of training
+```{r}
+#Build the first classfication model
+#to using the command rpat, R will build a tree where Class is to be predicted from the variable presents at the formula
+
+#Model classfication of train
+trainTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+valence+instrumentalness, data = train, method = "class")
+
+#Plotting the tree of train
+plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
+text(trainTree_Rock,use.n = T,all=T,cex=.7, pretty=0, xpd=TRUE, digits = 6)
+prp(trainTree_Rock, extra=101)
+# Visualize the decision tree with rpart.plot
+rpart.plot(trainTree_Rock, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+#Test errors of train tree
+pred <- predict(trainTree_Rock, train, type = "class")
+mConfusion <- table(train$Class, pred)
+TrainErr <- 1 - (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+print(TrainErr)
+#Compute errors
+TrainErr5 <- 1 - (mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+print(TrainErr5)
+
+
+```
+
+Build the first classfication model with set of test
+```{r}
+#Build the first classfication model
+#to using the command rpat, R will build a tree where Class is to be predicted from the variable presents at the formula
+
+
+#Model classfication of train
+testTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+valence+instrumentalness, data = test, method = "class")
+
+#Plotting the tree of train
+plot(testTree_Rock, compress=TRUE, uniform=TRUE)
+text(testTree_Rock,use.n = T,all=T,cex=.7, pretty=0, xpd=TRUE, digits = 6)
+prp(testTree_Rock, extra=101)
+# Visualize the decision tree with rpart.plot
+rpart.plot(testTree_Rock, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+#Test errors of train tree
+pred <- predict(testTree_Rock, test, type = "class")
+mConfusion <- table(test$Class, pred)
+TrainErr <- 1 - (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+print(TrainErr)
+#Compute errors
+TrainErr5 <- 1 - (mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+print(TrainErr5)
+
+```
+
+

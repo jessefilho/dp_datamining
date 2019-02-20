@@ -1,0 +1,230 @@
+---
+title: "R Notebook - Discover of Data set genre"
+output: none
+---
+
+```{r}
+#Load data
+genres = read.csv(file = 'dataGenre.csv', header = TRUE, na.strings = "?")
+#Remove lyrics from this set
+genres$titlesong <- NULL
+#Remove "tempo equals 0, because is not relevante now."
+genres <- genres[!genres$tempo <= 45.0 & !genres$tempo >= 250.0,]
+
+```
+
+
+
+```{r}
+
+#check dim()
+dim(genres)
+
+#Remove "Others from type of group, because is not relevante now."
+genres <- genres[!genres$typegroup == "Others",]
+
+#summary data
+summary(genres)
+
+#name
+names(genres)
+
+
+```
+
+
+```{r}
+#take a sample of genres Others
+othersSample <- genres[sample(which(genres$genretype=='Others'), sample(500:800, 1) ), ]
+
+clusteringSample <- genres[sample(which(genres$genretype=='Others'), sample(1000:2000, 1) ), ]
+
+#Creating samples only with Rock
+rockSample <- genres[sample(which(genres$genretype=='Rock'), 561), ]
+#Creating samples only with Pop
+popSample <- genres[sample(which(genres$genretype=='Pop'), 298), ]
+#take an sample from all
+#test <- genres[sample(NROW(genres), NROW(othersSample)*(1 - 0.1)),] 
+
+#creating a data set without genre type Others
+dfToClustering <- genres[!genres$genretype=='Others',]
+#Reattach A small and random data set with Others
+mainDataset <- bind_rows(othersSample,dfToClustering)
+summary(mainDataset)
+class(mainDataset$genretype)
+
+```
+```{r}
+summary(clusteringSample)
+#Remove genretype from this set
+clusteringSample$genretype <- NULL
+clusteringSample$typegroup <- NULL
+
+
+#Prepare Data Clustering
+mydata <- na.omit(clusteringSample) # listwise deletion of missing
+mydata <- scale(mydata) # standardize variables
+
+# Determine number of clusters
+wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+for (i in 2:15) wss[i] <- sum(kmeans(mydata, 
+   centers=i)$withinss)
+plot(1:15, wss, type="b", xlab="Number of Clusters",
+  ylab="Within groups sum of squares")
+
+# K-Means Cluster Analysis
+fit <- kmeans(mydata, 3) # 3 cluster solution
+# get cluster means 
+aggregate(mydata,by=list(fit$cluster),FUN=mean)
+# append cluster assignment
+mydata <- data.frame(mydata, fit$cluster)
+
+# Ward Hierarchical Clustering
+d <- dist(mydata, method = "euclidean") # distance matrix
+fit <- hclust(d, method="ward") 
+plot(fit) # display dendogram
+groups <- cutree(fit, k=3) # cut tree into 3 clusters
+# draw dendogram with red borders around the 3 clusters 
+rect.hclust(fit, k=3, border="red")
+
+# Ward Hierarchical Clustering with Bootstrapped p values
+library(pvclust)
+fit <- pvclust(mydata, method.hclust="ward",
+   method.dist="euclidean")
+plot(fit) # dendogram with p values
+# add rectangles around groups highly supported by the data
+pvrect(fit, alpha=.95)
+
+```
+
+```{r}
+# Model Based Clustering
+library(mclust)
+fit <- Mclust(mydata)
+plot(fit) # plot results 
+summary(fit) # display the best model
+```
+
+```{r}
+# K-Means Clustering with 5 clusters
+fit <- kmeans(mydata, 5)
+
+# Cluster Plot against 1st 2 principal components
+
+# vary parameters for most readable graph
+library(cluster) 
+clusplot(mydata, fit$cluster, color=TRUE, shade=TRUE, 
+   labels=2, lines=0)
+
+# Centroid Plot against 1st 2 discriminant functions
+library(fpc)
+plotcluster(mydata, fit$cluster)
+```
+
+
+```{r}
+#Remove typegroup from this set to test Clustering
+mainDataset$typegroup <- NULL
+
+#Explore data set o test Clustering
+class(mainDataset)
+names(mainDataset)
+str(mainDataset)
+```
+
+
+```{r}
+#Prepare Data to Data Classification
+#Class Rock and Other
+df_rockNothers <- bind_rows(othersSample,rockSample)
+df_genres <- bind_rows(othersSample,mainDataset)
+```
+
+```{r}
+# Prepare Data to Data Clusting
+# mydata <- na.omit(mainDataset) # listwise deletion of missing
+# mydata <- scale(mydata) # standardize variables
+```
+
+```{r}
+#Plotting the dependent variable distribution
+pl1 <- ggplot(df_rockNothers, aes(df_rockNothers$genretype))
+pl1 + geom_density(fill = "red", alpha = "0.7")
+```
+
+```{r}
+summary(df_rockNothers)
+
+```
+
+```{r}
+library(caTools)
+set.seed(100)
+df_rockNothers$genretype <- as.character(df_rockNothers$genretype)
+Storetypes <- subset(df_rockNothers, df_rockNothers$genretype != "")
+spl <- sample.split(Storetypes$genretype, SplitRatio = 0.8)
+Train <- subset(Storetypes, spl == TRUE)
+Test <- subset(Storetypes, spl == FALSE)
+###Using Random Forest for classification
+library(randomForest)
+Train$genretype <- as.factor(Train$genretype)
+Test$genretype <- as.factor(Test$genretype)
+###Creating the model
+SizeForest <- randomForest(genretype ~.-tempo -energy -danceability -speechiness -accoustiness -loudness -duration -valence -instrumentalness,
+                           data =  Train,nodesize = 25, ntree = 100)  
+###Predicting on the test set
+PredictForest <- predict(SizeForest, newdata = Test)
+#Confusion matrix for accuracy
+table(Test$genretype, PredictForest)
+```
+
+```{r}
+###Classifying the missing values in the dataset
+df_rockNothers$genretype <- predict(SizeForest, newdata =df_rockNothers)
+
+summary(df_rockNothers)
+```
+
+```{r}
+summary(df_genres)
+dim(df_genres)
+library(caTools)
+set.seed(100)
+df_genres$genretype <- as.character(df_genres$genretype)
+Storetypes <- subset(df_genres, df_genres$genretype != "")
+spl <- sample.split(Storetypes$genretype, SplitRatio = 0.8)
+Train <- subset(Storetypes, spl == TRUE)
+Test <- subset(Storetypes, spl == FALSE)
+###Using Random Forest for classification
+library(randomForest)
+Train$genretype <- as.factor(Train$genretype)
+Test$genretype <- as.factor(Test$genretype)
+###Creating the model
+SizeForest <- randomForest(genretype ~.-tempo -energy -danceability -speechiness -accoustiness -loudness -duration -valence -instrumentalness,
+                           data =  Train,nodesize = 25, ntree = 100)  
+###Predicting on the test set
+PredictForest <- predict(SizeForest, newdata = Test)
+#Confusion matrix for accuracy
+table(Test$genretype, PredictForest)
+```
+
+```{r}
+#Remove typegroup from this set to test Clustering
+df_toCov <- genres
+df_toCov$typegroup <- NULL
+df_toCov$genretype <- NULL
+summary(df_toCov)
+x <- df_toCov
+# x est une variable de type matrix ou data.frame
+cor(x, method = c("pearson", "kendall", "spearman"))
+
+mcor <- cor(x)
+
+library(corrplot)
+#https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+## corrplot 0.84 loaded
+M <- cor(x)
+corrplot(M, method = "circle")
+
+```
+
