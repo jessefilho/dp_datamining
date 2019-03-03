@@ -83,9 +83,11 @@ Steps to prepare data for the Classfication Model:
 
 
 ```{r}
+library(dplyr)
+library(quadprog)
 #take a sample of genres "Others"
 #Only 2% from attributes with the label Others
-idx_others <- genres[sample(which(genres$genretype=='Others'),size = 0.02* nrow(genres[which(genres$genretype=='Others'),]) ), ]
+idx_others <- genres[sample(which(genres$genretype=='Others'),size = 0.009* nrow(genres[which(genres$genretype=='Others'),]) ), ]
 #dataset without the label Others
 dataset_withoutOthers <- genres[!genres$genretype=='Others',]
 #Reattach A small and random data set with Others
@@ -118,6 +120,8 @@ summary(train$genretype)
 
 Build the first classfication model with set of training
 ```{r}
+library(rpart)
+library(rpart.plot)
 #Build the first classfication model
 #to using the command rpat, R will build a tree where Class is to be predicted from the variable presents at the formula
 
@@ -135,6 +139,7 @@ rpart.plot(trainTree_Rock, box.palette="RdBu", shadow.col="gray", nn=TRUE)
 pred <- predict(trainTree_Rock, train, type = "class")
 mConfusion <- table(train$Class, pred)
 print(mConfusion)
+
 #Test Accuracy of model
 acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
 print("acc")
@@ -182,6 +187,7 @@ print(Err*100)
 ```
 
 ```{r}
+library(rpart)
 #Errors array
 errors <- numeric(0)
 #Accuracies array
@@ -245,3 +251,160 @@ print(meanError)
 ```
 
 Depend of quality of data...
+
+```{r}
+#Construction of q naive Bayes classifier
+
+#Getting started with Naive Bayes
+#Install the package
+#install.packages(“e1071”)
+#Loading the library
+library(e1071)
+#Randomly shuffle the data
+yourdata<-genres_ToSplit[sample(nrow(genres_ToSplit)),]
+#Create 10 equally size folds
+folds <- cut(seq(1,nrow(yourdata)),breaks=10,labels=FALSE)
+#Perform 10 fold cross validation
+#Segement your data by fold using the which() function 
+testIndexes <- which(folds==i,arr.ind=TRUE)
+testData <- yourdata[testIndexes, ]
+trainData <- yourdata[-testIndexes, ]
+  
+#Fitting the Naive Bayes model
+Naive_Bayes_Model=naiveBayes(Rock~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data=trainData)
+#What does the model say? Print the model summary
+Naive_Bayes_Model
+
+pred <- predict(Naive_Bayes_Model, trainData)
+mConfusion <- table(trainData$Class, pred)
+print(mConfusion)
+#Test Accuracy of model
+acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+#print("acc")
+#print(acc*100)
+
+#Compute error rate
+Err <- (mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+#print("err")
+#print(Err*100)
+
+accs <- rbind(accs,acc)
+errors <- rbind(errors,Err)
+  
+
+meanAcc <- mean(accs)
+meanError <- mean(errors)
+print("Acc mean: ")
+print(meanAcc)
+print("Err mean: ")
+print(meanError)
+
+
+```
+
+```{r}
+library(e1071)
+#Errors array
+errors <- numeric(0)
+#Accuracies array
+accs <- numeric(0)
+#Randomly shuffle the data
+yourdata<-genres_ToSplit[sample(nrow(genres_ToSplit)),]
+#Create 10 equally size folds
+folds <- cut(seq(1,nrow(yourdata)),breaks=10,labels=FALSE)
+#Perform 10 fold cross validation
+for(i in 1:10){
+  #Segement your data by fold using the which() function 
+  testIndexes <- which(folds==i,arr.ind=TRUE)
+  testData <- yourdata[testIndexes, ]
+  trainData <- yourdata[-testIndexes, ]
+  #Use the test and train data partitions however you desire...
+  
+  #Fitting the Naive Bayes model
+  Naive_Bayes_Model=naiveBayes(Rock~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data=trainData)
+  #What does the model say? Print the model summary
+  Naive_Bayes_Model
+  
+  #Plotting the tree of train
+  #plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
+  #text(trainTree_Rock,use.n = T,all=T,cex=.7, pretty=0, xpd=TRUE, digits = 6)
+  #prp(trainTree_Rock, extra=101)
+
+  
+  pred <- predict(Naive_Bayes_Model, trainData)
+  mConfusion <- table(trainData$Class, pred)
+  #print(mConfusion)
+  #Test Accuracy of model
+  acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+  #print("acc")
+  #print(acc*100)
+  
+  #Compute error rate
+  Err <- (mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+  #print("err")
+  #print(Err*100)
+  
+  accs <- rbind(accs,acc)
+  errors <- rbind(errors,Err)
+}
+
+meanAcc <- mean(accs)
+meanError <- mean(errors)
+print("Acc mean: ")
+print(meanAcc)
+print("Err mean: ")
+print(meanError)
+```
+
+```{r}
+str(genres_ToSplit)
+```
+
+
+```{r}
+set.seed(123)
+library(randomForest)
+#Randomly shuffle the data
+yourdata<-genres_ToSplit[sample(nrow(genres_ToSplit)),]
+#Create 10 equally size folds
+folds <- cut(seq(1,nrow(yourdata)),breaks=10,labels=FALSE)
+#Perform 10 fold cross validation
+#Segement your data by fold using the which() function 
+testIndexes <- which(folds==i,arr.ind=TRUE)
+testData <- yourdata[testIndexes, ]
+trainData <- yourdata[-testIndexes, ]
+fit <- randomForest(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = trainData, na.action = na.roughfix)
+print(fit)
+
+
+```
+
+```{r}
+varImpPlot(fit)
+fit$importance
+fit$importance[order(fit$importance[, 1], decreasing = TRUE), ]
+```
+
+```{r}
+plot(genretype ~ accoustiness, data = trainData)
+plot(genretype ~ duration, data = trainData)
+```
+
+```{r}
+plot(fit$err.rate[, 1], type = "l", xlab = "nombre d'arbres", ylab = "erreur OOB")
+```
+
+```{r}
+set.seed(123)
+fit <- randomForest(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = trainData, ntree = 340, 
+    mtry = 2, na.action = na.roughfix)
+print(fit)
+```
+
+```{r}
+set.seed(123)
+library(caret)
+mod <- train(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = trainData, method = "rf")
+print(mod)
+```
+
