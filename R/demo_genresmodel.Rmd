@@ -6,7 +6,12 @@ output: html_notebook
 This is the demo for solve Genre problematic. In order to well understand this file was resumed to only show up the data partition and model test.
 
 Main goal of this model:
-- Predict genres based on song features;
+- Classify new instances using these models;
+
+Strategies:
+- Find the must importantes features;
+- Find the best model possible;
+- Apply Supervised Classi fication;
 
 
 Considerations:
@@ -87,7 +92,7 @@ library(dplyr)
 library(quadprog)
 #take a sample of genres "Others"
 #Only 2% from attributes with the label Others
-idx_others <- genres[sample(which(genres$genretype=='Others'),size = 0.009* nrow(genres[which(genres$genretype=='Others'),]) ), ]
+idx_others <- genres[sample(which(genres$genretype=='Others'),size = 0.008* nrow(genres[which(genres$genretype=='Others'),]) ), ]
 #dataset without the label Others
 dataset_withoutOthers <- genres[!genres$genretype=='Others',]
 #Reattach A small and random data set with Others
@@ -109,16 +114,63 @@ index <- sample(1:nrow(genres_ToSplit),size = 0.7* nrow(genres_ToSplit))
 train <- genres_ToSplit[index,]
 # Use the small partition to test - 30
 test <- genres_ToSplit[-index,]
-
 ```
 
 
 ```{r}
 summary(train)
 summary(train$genretype)
+
+```
+```{r}
+summary(test)
+summary(test$genretype)
+```
+```{r}
+print(train[,3:11])
 ```
 
-Build the first classfication model with set of training
+
+Build the first classfication model with set of train:
+- Decision Tree;
+- Nayve Bayes
+
+```{r}
+library(caret)
+library(ggplot2)
+library(rpart.plot)
+library(klaR)
+
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+
+# b) nb 
+set.seed(7)
+fit.nb_train <- train(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = train, method = "nb", metric=metric, trControl=control)
+
+# c) knn 
+set.seed(7)
+fit.knn_train <- train(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = train, method = "knn", metric=metric, trControl=control)
+
+# estimate variable importance
+importance <- varImp(fit.knn_train, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
+
+# summarize accuracy of models
+results <- resamples(list(nb=fit.nb_train, 
+                          knn=fit.knn))
+summary(results)
+
+# compare accuracy of models
+dotplot(results)
+
+
+```
 ```{r}
 library(rpart)
 library(rpart.plot)
@@ -127,7 +179,41 @@ library(rpart.plot)
 
 #Model classfication of train
 #Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness
-trainTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = train, method = "class")
+fit.tree_train = rpart(Class ~ -tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = train, method = "class")
+
+#Plotting the tree of train
+plot(fit.tree_train, compress=TRUE, uniform=TRUE)
+text(fit.tree_train,use.n = T,all=T,cex=.7, pretty=0, xpd=TRUE, digits = 6)
+prp(fit.tree_train, extra=101)
+# Visualize the decision tree with rpart.plot
+rpart.plot(fit.tree_train, box.palette="RdBu", shadow.col="gray", nn=TRUE)
+#Test errors of train tree
+pred <- predict(fit.tree_train, train, type = "class")
+mConfusion <- table(train$Class, pred)
+print(mConfusion)
+
+#Test Accuracy of model
+acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+print("acc")
+print(acc*100)
+
+#Compute error rate
+Err <- (mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+print("err")
+print(Err*100)
+```
+
+
+
+```{r}
+library(rpart)
+library(rpart.plot)
+#Build the first classfication model
+#to using the command rpat, R will build a tree where Class is to be predicted from the variable presents at the formula
+
+#Model classfication of train
+#Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness
+trainTree_Rock = rpart(genretype ~ +Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = train, method = "class")
 
 #Plotting the tree of train
 plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
@@ -205,7 +291,7 @@ for(i in 1:10){
   #Use the test and train data partitions however you desire...
   
   #Model classfication of train
-  trainTree_Rock = rpart(Class ~ Rock+tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = trainData, method = "class")
+  trainTree_Rock = rpart(Class ~tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness, data = trainData, method = "class")
   
   #Plotting the tree of train
   #plot(trainTree_Rock, compress=TRUE, uniform=TRUE)
@@ -407,4 +493,13 @@ library(caret)
 mod <- train(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = trainData, method = "rf")
 print(mod)
 ```
+
+```{r}
+set.seed(123)
+library(caret)
+mod <- train(genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness, data = trainData, method = "knn")
+print(mod)
+```
+
+
 

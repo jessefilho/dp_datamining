@@ -34,6 +34,7 @@ names(genres)
 
 
 ```{r}
+library(dplyr)
 #take a sample of genres Others
 othersSample <- genres[sample(which(genres$genretype=='Others'), sample(500:800, 1) ), ]
 
@@ -147,6 +148,7 @@ df_genres <- bind_rows(othersSample,mainDataset)
 ```
 
 ```{r}
+library(ggplot2)
 #Plotting the dependent variable distribution
 pl1 <- ggplot(df_rockNothers, aes(df_rockNothers$genretype))
 pl1 + geom_density(fill = "red", alpha = "0.7")
@@ -173,9 +175,9 @@ Test$genretype <- as.factor(Test$genretype)
 SizeForest <- randomForest(genretype ~.-tempo -energy -danceability -speechiness -accoustiness -loudness -duration -valence -instrumentalness,
                            data =  Train,nodesize = 25, ntree = 100)  
 ###Predicting on the test set
-PredictForest <- predict(SizeForest, newdata = Test)
+PredictForest <- predict(SizeForest, newdata = Train)
 #Confusion matrix for accuracy
-table(Test$genretype, PredictForest)
+table(Train$genretype, PredictForest)
 ```
 
 ```{r}
