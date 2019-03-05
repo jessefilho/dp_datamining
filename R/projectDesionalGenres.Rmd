@@ -172,7 +172,7 @@ library(randomForest)
 Train$genretype <- as.factor(Train$genretype)
 Test$genretype <- as.factor(Test$genretype)
 ###Creating the model
-SizeForest <- randomForest(genretype ~.-tempo -energy -danceability -speechiness -accoustiness -loudness -duration -valence -instrumentalness,
+SizeForest <- randomForest(genretype~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness,
                            data =  Train,nodesize = 25, ntree = 100)  
 ###Predicting on the test set
 PredictForest <- predict(SizeForest, newdata = Train)

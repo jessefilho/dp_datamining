@@ -1,0 +1,300 @@
+---
+title: "Genre DEMO:SVM Radial"
+output: html_notebook
+---
+
+This is the demo for solve Genre problematic. In order to well understand it, this file was resumed to only show up the data partition and model test.
+
+About this set:
+- Multi labels;
+- Not discrete values;
+- 
+
+
+Main goal of this model:
+- Classify new instances using these models;
+
+Strategies:
+- Find the must importantes features;
+- Find the best model possible;
+- Apply Supervised Classi fication;
+
+
+Considerations:
+
+- "Others" contains among genres known, anothers genres do not categorized.
+- 
+
+
+Vocabulary:
+
+"discrete values" : ( Binary values like 0/1, yes/no, true/false )
+
+'formula' : 
+
+The variable on the left-hand side of a tilde (~) is called the "dependent variable"("response variable", "outcome variable" or "label"), while the variables on the right-hand side are called the "independent variables" ("predictor (variable)", "controlled variable", "feature") and are joined by plus signs +.
+
+"+" : for adding terms;
+"-" : for removing terms;
+
+
+
+References:
+
+Music Map:
+https://musicmap.info/
+
+Classification of Artist Genre through Supervised Learning
+http://cs229.stanford.edu/proj2016/report/RidleyDumovic-ClassificationOfArtistGenrethroughSupervisedLearning-report.pdf?fbclid=IwAR2WJEi8JdE2Ut_xwUe0WWZPFJUBxm16UE9vpkrXlnCF23Edeu2SMwzTQgU
+```{r}
+library(dplyr)
+library(quadprog)
+library(sjlabelled)
+#Load data
+#genres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
+
+rockG = read.csv(file = '~/Documents/dp_datamining/data/rockG.csv', sep = ";", header = TRUE, na.strings = "?")
+#popG = read.csv(file = '~/Documents/dp_datamining/data/popG.csv', sep = ";", header = TRUE, na.strings = "?")
+#electronicG = read.csv(file = '~/Documents/dp_datamining/data/electronicG.csv', sep = ";", header = TRUE, na.strings = "?")
+othersG = read.csv(file = '~/Documents/dp_datamining/data/othersG.csv', sep = ";", header = TRUE, na.strings = "?")
+
+#Remove "tempo equals 0, because is not relevante for now."
+rockG <- rockG[!rockG$tempo <= 45.0 & !rockG$tempo >= 250.0,]
+#Remove column from this set
+rockG$titlesong <- NULL
+rockG$typegroup <- NULL
+# rockG$Class[rockG$genretype=='Others'] <- 0
+# rockG$Class[rockG$genretype=='Rock'] <- 1
+
+#take a sample of genres "Others"
+#Only 1% from attributes with the label Others
+others_df <- rockG[ sample( which(rockG$genretype== "Others"), round(0.01*length(which(rockG$genretype== "Others")))), ]
+
+rock_df <- rockG[which(rockG$genretype=='Rock'),]
+#Reattach A small and random data set with Others
+rock_df <- bind_rows(others_df,rock_df)
+
+
+summary(rock_df)
+str(rock_df)
+class(rock_df)
+
+
+
+
+#summary(others_df)
+# summary(rockG)
+# class(rockG)
+
+
+#Reattach A small and random data set with Others
+#rock_df <- bind_rows(rockG,others_df)
+#rock_df <- data.frame(others_df,rockG)
+#summary(rock_df$genretype)
+
+
+# #Data Preparation 
+# #Remove lyrics from this set
+# #genres$titlesong <- NULL
+# #Remove "tempo equals 0, because is not relevante for now."
+# genres <- genres[!genres$tempo <= 45.0 & !genres$tempo >= 250.0,]
+# #Remove "Others from type of group, because is not relevante now."
+# genres <- genres[!genres$typegroup == "Others",]
+# genres$titlesong <- NULL
+# genres$typegroup <- NULL
+# 
+# #genres$Category[genres$genretype=='Others'] <- 0
+# #genres$Category[genres$genretype=='Rock'] <- 1
+# 
+# rock_df <-genres[which(genres$genretype=='Rock'),] # genres[is.element(genres$genretype,'Rock' ),] filter(genres, genres$genretype %in% 'Rock') #
+# 
+# 
+# 
+# 
+# 
+# 
+# 
+# pop_df <- genres[which(genres$genretype=='Pop'),]
+# Electronic_df <- genres[which(genres$genretype=='Electronic'),]
+
+
+
+#take a sample of genres "Others"
+#Only 2% from attributes with the label Others
+#others_df <- genres[sample(which(genres$genretype=='Others'),size = 0.02* nrow(genres[which(genres$genretype=='Others'),]) ), ]
+
+#others_df$genretype<-factor(others_df$genretype)
+#others_df <- droplevels(others_df)
+
+#dataset without the label Others
+#For any case
+# dataset_withoutOthers <- genres[!genres$genretype=='Others',]
+# summary(dataset_withoutOthers$genretype)
+
+
+# #Reattach A small and random data set with Others
+# rock_df <- bind_rows(others_df,rock_df)
+# #rock_df <- remove_labels(rock_df$genretype, labels = 'Blues')
+# 
+# rock_df <- droplevels(rock_df)
+# rock_df <- transform(rock_df, genretype = factor(genretype, labels = "Rock"))
+# rock_df <- subset(rock_df, genretype != "Rock")
+# table(rock_df$genretype)
+# table(droplevels(rock_df)$genretype)
+# 
+
+#1: Others
+#2: Rock
+
+#summary(rock_df$genretype)
+#print(rock_df)
+
+
+```
+
+
+```{r}
+library(caret)
+#One vs One: Rock
+# Split between 80 and 30
+#index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
+index_Rock <- createDataPartition(y = rock_df$genretype, p= 0.7, list = FALSE)
+# Use the large partition to training - 70
+train_Rock <- rock_df[index_Rock,]
+# Use the small partition to test - 30
+test_Rock <- rock_df[-index_Rock,]
+
+train_Rock <- train_Rock[which(!train_Rock$genretype=='NA'),]
+str(train_Rock)
+summary(train_Rock)
+str(train_Rock)
+class(train_Rock)
+
+test_Rock <- test_Rock[which(!test_Rock$genretype=='NA'),]
+str(test_Rock)
+summary(test_Rock)
+str(test_Rock)
+class(test_Rock)
+
+
+
+```
+
+
+
+
+```{r}
+summary(train_Rock)
+```
+
+
+
+
+
+
+```{r}
+library(caret)
+library(lattice)
+library(ggplot2)
+library(caret)
+library(klaR)
+library(MASS)
+
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+#+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
+formula_SVM <- genretype~ .
+
+
+#SVM Radial 
+set.seed(89)
+fit.svmRadial_train <- train(formula_SVM,
+                             data = train_Rock,
+                             method = "svmRadial",
+                             trControl=control,
+                             preProcess = c("center", "scale"),
+                             tuneLength = 10)
+fit.svmRadial_train
+#plot(fit.svmRadial_train)
+
+```
+
+```{r}
+test_pred <- predict(fit.svmRadial_train, newdata = test_Rock)
+confusionMatrix(test_pred, test_Rock$genretype )
+```
+
+```{r}
+summary(others_df$genretype)
+test_pred <- predict(fit.svmRadial_train, newdata = others_df)
+confusionMatrix(test_pred, others_df$genretype )
+```
+
+```{r}
+
+others_df2 <- rockG[ sample( which(rockG$genretype== "Others"), round(0.5*length(which(rockG$genretype== "Others")))), ]
+others_df2$titlesong <- NULL
+others_df2$typegroup <- NULL
+
+#Reattach A small and random data set with Others
+tes_df2 <- bind_rows(others_df,rockG[which(rockG$genretype=='Rock'),])
+
+
+str(tes_df2)
+summary(tes_df2$genretype)
+
+othersG_pred <- predict(fit.svmRadial_train, newdata = tes_df2)
+confusionMatrix(othersG_pred, tes_df2$genretype )
+```
+
+```{r}
+library(caret)
+#One vs One: Rock
+# Split between 80 and 30
+#index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
+index_Rock2 <- createDataPartition(y = rock_df$genretype, p= 0.7, list = FALSE)
+# Use the large partition to training - 70
+train_Rock2 <- rock_df[index_Rock2,]
+# Use the small partition to test - 30
+test_Rock2 <- rock_df[-index_Rock2,]
+
+train_Rock2 <- train_Rock2[which(!train_Rock2$genretype=='NA'),]
+# str(train_Rock2)
+# summary(train_Rock2)
+# str(train_Rock2)
+# class(train_Rock2)
+
+test_Rock2 <- test_Rock[which(!test_Rock2$genretype=='NA'),]
+# str(test_Rock2)
+# summary(test_Rock2)
+# str(test_Rock2)
+# class(test_Rock2)
+
+grid_radial <- expand.grid(sigma = c(0,0.01, 0.02, 0.025, 0.03, 0.04,
+ 0.05, 0.06, 0.07,0.08, 0.09, 0.1, 0.25, 0.5, 0.75,0.9),
+ C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
+ 1, 1.5, 2,5))
+
+set.seed(3233)
+controlGrid <- trainControl(method="cv", number=10)
+svm_Radial_Grid <- train(genretype ~.,
+                         data = train_Rock2,
+                         method = "svmRadial",
+                         trControl=controlGrid,
+                         preProcess = c("center", "scale"),
+                         tuneGrid = grid_radial,
+                         tuneLength = 10)
+
+svm_Radial_Grid
+plot(svm_Radial_Grid)
+```
+
+```{r}
+test_pred_Radial_Grid <- predict(svm_Radial_Grid, newdata = test_Rock2)
+
+confusionMatrix(test_pred_Radial_Grid, test_Rock2$genretype )
+#Confusion Matrix and Statistics
+```
+
