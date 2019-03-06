@@ -46,6 +46,12 @@ https://musicmap.info/
 
 Classification of Artist Genre through Supervised Learning
 http://cs229.stanford.edu/proj2016/report/RidleyDumovic-ClassificationOfArtistGenrethroughSupervisedLearning-report.pdf?fbclid=IwAR2WJEi8JdE2Ut_xwUe0WWZPFJUBxm16UE9vpkrXlnCF23Edeu2SMwzTQgU
+
+SUPPORT VECTOR MACHINE CLASSIFIER IMPLEMENTATION IN R WITH CARET PACKAGE
+http://dataaspirant.com/2017/01/19/support-vector-machine-classifier-implementation-r-caret-package/
+
+
+http://cs229.stanford.edu/proj2016/report/RidleyDumovic-ClassificationOfArtistGenrethroughSupervisedLearning-report.pdf?fbclid=IwAR2WJEi8JdE2Ut_xwUe0WWZPFJUBxm16UE9vpkrXlnCF23Edeu2SMwzTQgU
 ```{r}
 library(dplyr)
 library(quadprog)
@@ -68,7 +74,7 @@ rockG$typegroup <- NULL
 
 #take a sample of genres "Others"
 #Only 1% from attributes with the label Others
-others_df <- rockG[ sample( which(rockG$genretype== "Others"), round(0.01*length(which(rockG$genretype== "Others")))), ]
+others_df <- rockG[ sample( which(rockG$genretype== "Others"), round(0.02*length(which(rockG$genretype== "Others")))), ]
 
 rock_df <- rockG[which(rockG$genretype=='Rock'),]
 #Reattach A small and random data set with Others
@@ -155,41 +161,44 @@ class(rock_df)
 
 ```{r}
 library(caret)
-#One vs One: Rock
-# Split between 80 and 30
-#index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
-index_Rock <- createDataPartition(y = rock_df$genretype, p= 0.7, list = FALSE)
-# Use the large partition to training - 70
-train_Rock <- rock_df[index_Rock,]
-# Use the small partition to test - 30
-test_Rock <- rock_df[-index_Rock,]
+library(lattice)
+library(ggplot2)
+# #One vs One: Rock
+# # Split between 80 and 30
+# #index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
+# index_Rock <- createDataPartition(y = rock_df$genretype, p= 0.7, list = FALSE)
+# # Use the large partition to training - 70
+# train_Rock <- rock_df[index_Rock,]
+# # Use the small partition to test - 30
+# test_Rock <- rock_df[-index_Rock,]
+# 
+# train_Rock <- train_Rock[which(!train_Rock$genretype=='NA'),]
+# str(train_Rock)
+# summary(train_Rock)
+# str(train_Rock)
+# class(train_Rock)
+# 
+# test_Rock <- test_Rock[which(!test_Rock$genretype=='NA'),]
+# str(test_Rock)
+# summary(test_Rock)
+# str(test_Rock)
+# class(test_Rock)
 
+
+library("splitstackshape")
+test<-stratified(rock_df,"genretype", size=.3)
+
+train_Rock<-setdiff(rock_df,test)
 train_Rock <- train_Rock[which(!train_Rock$genretype=='NA'),]
-str(train_Rock)
 summary(train_Rock)
-str(train_Rock)
-class(train_Rock)
+summary(train_Rock$genretype)
 
-test_Rock <- test_Rock[which(!test_Rock$genretype=='NA'),]
-str(test_Rock)
+test_Rock <- test[which(!test$genretype=='NA'),]
 summary(test_Rock)
-str(test_Rock)
-class(test_Rock)
 
 
 
 ```
-
-
-
-
-```{r}
-summary(train_Rock)
-```
-
-
-
-
 
 
 ```{r}
@@ -205,7 +214,7 @@ control <- trainControl(method="cv", number=10)
 metric <- "Accuracy"
 
 #+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
-formula_SVM <- genretype~ .
+formula_SVM <- genretype~ +tempo+energy+danceability+speechiness+accoustiness+loudness-duration+valence+instrumentalness
 
 
 #SVM Radial 
@@ -219,11 +228,76 @@ fit.svmRadial_train <- train(formula_SVM,
 fit.svmRadial_train
 #plot(fit.svmRadial_train)
 
+#KNN Radial 
+set.seed(89)
+fit.knn_train <- train(formula_SVM,
+                             data = train_Rock,
+                             method = "knn",
+                             trControl=control,
+                             preProcess = c("center", "scale"),
+                             tuneLength = 10)
+fit.knn_train
+#plot(fit.knn_train)
+
+#NaiveBayne Radial 
+set.seed(89)
+fit.nb_train <- train(formula_SVM,
+                             data = train_Rock,
+                             method = "nb",
+                             trControl=control,
+                             preProcess = c("center", "scale"),
+                             tuneLength = 10)
+fit.nb_train
+#plot(fit.nb_train)
+
+
+#Neural Network
+set.seed(89)
+fit.mxnet_train <- train(formula_SVM,
+                             data = train_Rock,
+                             method = "mxnet",
+                             trControl=control,
+                             preProcess = c("center", "scale"),
+                             tuneLength = 10)
+fit.mxnet_train
+#plot(fit.mxnet_train)
+
+# summarize accuracy of models
+results <- resamples(list(mxnet=fit.mxnet_train,
+                          nb=fit.nb_train, 
+                          knn=fit.knn_train,
+                          svmRadial=fit.svmRadial_train))
+summary(results)
+
+# compare accuracy of models
+dotplot(results)
+
+```
+```{r}
+# estimate variable importance
+importance <- varImp(fit.knn_train, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
 ```
 
+
 ```{r}
-test_pred <- predict(fit.svmRadial_train, newdata = test_Rock)
+#Choose the best model
+bestModel <- fit.svmRadial_train
+
+test_pred <- predict(bestModel, newdata = test_Rock)
 confusionMatrix(test_pred, test_Rock$genretype )
+plot(bestModel,
+     plotType = "line",
+     metric = "Accuracy",
+     #digits = getOption("digits") - 3,
+     #xTrans = NULL,
+     #nameInStrip = FALSE, ...
+     )
+
+
 ```
 
 ```{r}
@@ -272,10 +346,10 @@ test_Rock2 <- test_Rock[which(!test_Rock2$genretype=='NA'),]
 # str(test_Rock2)
 # class(test_Rock2)
 
-grid_radial <- expand.grid(sigma = c(0,
- 0.05,0.1, 0.25, 0.5, 0.75,0.9),
- C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
- 1, 1.5, 2,5))
+# grid_radial <- expand.grid(sigma = c(0,
+#  0.05,0.1, 0.25, 0.5, 0.75,0.9),
+#  C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
+#  1, 1.5, 2,5))
 
 set.seed(3233)
 controlGrid <- trainControl(method="cv", number=10)
@@ -284,7 +358,7 @@ svm_Radial_Grid <- train(genretype ~.,
                          method = "svmRadial",
                          trControl=controlGrid,
                          preProcess = c("center", "scale"),
-                         tuneGrid = grid_radial,
+                         #tuneGrid = grid_radial,
                          tuneLength = 10)
 
 svm_Radial_Grid

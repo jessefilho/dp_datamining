@@ -4,7 +4,7 @@ library(quadprog)
 library(sjlabelled)
 
 
-allGenres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
+allGenres = read.csv(file = '~/Documents/dp_datamining/data/allGenresV2.csv', sep = ";", header = TRUE, na.strings = "?")
 othersG = read.csv(file = '~/Documents/dp_datamining/data/othersG.csv', sep = ";", header = TRUE, na.strings = "?")
 
 
@@ -20,7 +20,7 @@ allGenres$typegroup <- NULL
 othersG$titlesong <- NULL
 othersG$typegroup <- NULL
 
-othersG <- othersG[ sample( which(othersG$genretype== "Others"), round(0.05*length(which(othersG$genretype== "Others")))), ]
+othersG <- othersG[ sample( which(othersG$genretype== "Others"), round(0.02*length(which(othersG$genretype== "Others")))), ]
 
 summary(allGenres$genretype)
 summary(allGenres)
@@ -31,25 +31,37 @@ summary(othersG)
 ```{r}
 library(caret)
 
-# Split between 80 and 30
-#index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
-index_allGenre <- createDataPartition(y = allGenres$genretype, p= 0.7, list = FALSE)
-# Use the large partition to training - 70
-train_allGenre <- allGenres[index_allGenre,]
-# Use the small partition to test - 30
-test_allGenre <- allGenres[-index_allGenre,]
+# # Split between 80 and 30
+# #index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
+# index_allGenre <- createDataPartition(y = allGenres$genretype, p= 0.7, list = FALSE)
+# # Use the large partition to training - 70
+# train_allGenre <- allGenres[index_allGenre,]
+# # Use the small partition to test - 30
+# test_allGenre <- allGenres[-index_allGenre,]
+# 
+# #train_allGenre <- train_allGenre[which(!train_allGenre$genretype=='NA'),]
+# str(train_allGenre)
+# summary(train_allGenre)
+# str(train_allGenre)
+# class(train_allGenre)
+# 
+# #test_allGenre <- test_allGenre[which(!test_allGenre$genretype=='NA'),]
+# str(test_allGenre)
+# summary(test_allGenre)
+# str(test_allGenre)
+# class(test_allGenre)
 
-#train_allGenre <- train_allGenre[which(!train_allGenre$genretype=='NA'),]
-str(train_allGenre)
+
+library("splitstackshape")
+test<-stratified(allGenres,"genretype", size=.3)
+
+train_allGenre<-setdiff(allGenres,test)
+train_allGenre <- train_allGenre[which(!train_allGenre$genretype=='NA'),]
 summary(train_allGenre)
-str(train_allGenre)
-class(train_allGenre)
+summary(train_allGenre$genretype)
 
-#test_allGenre <- test_allGenre[which(!test_allGenre$genretype=='NA'),]
-str(test_allGenre)
+test_allGenre <- test[which(!test$genretype=='NA'),]
 summary(test_allGenre)
-str(test_allGenre)
-class(test_allGenre)
 ```
 
 ```{r}
@@ -69,10 +81,10 @@ formula_SVM <- genretype~ .
 
 
 #SVM Radial 
-grid_radial <- expand.grid(sigma = c(0,
- 0.05,0.1, 0.25, 0.5, 0.75,0.9),
- C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
- 1, 1.5, 2,5))
+# grid_radial <- expand.grid(sigma = c(0,
+#  0.05,0.1, 0.25, 0.5, 0.75,0.9),
+#  C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
+#  1, 1.5, 2,5))
 
 set.seed(3233)
 controlGrid <- trainControl(method="cv", number=10)
@@ -81,7 +93,7 @@ svm_Radial_Grid <- train(genretype ~.,
                          method = "svmRadial",
                          trControl=controlGrid,
                          preProcess = c("center", "scale"),
-                         tuneGrid = grid_radial,
+                         #tuneGrid = grid_radial,
                          tuneLength = 10)
 
 svm_Radial_Grid
