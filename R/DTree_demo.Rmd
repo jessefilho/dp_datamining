@@ -52,7 +52,7 @@ summary(othersG)
 
 
 library("splitstackshape")
-test<-stratified(allGenres,"genretype", size=.2)
+test<-stratified(allGenres,"Class", size=.2)
 train<-setdiff(allGenres,test)
 train <- train[which(!train$genretype=='NA'),]
 test <- test[which(!test$genretype=='NA'),]
