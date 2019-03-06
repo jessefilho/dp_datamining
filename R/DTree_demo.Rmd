@@ -37,17 +37,30 @@ summary(allGenres)
 summary(othersG)
 ```
 ```{r}
-# Split between 80 and 30
-index <- sample(1:nrow(allGenres),size = 0.7* nrow(allGenres))
-# Use the large partition to training - 70
-train <- allGenres[index,]
+# # Split between 80 and 30
+# index <- sample(1:nrow(allGenres),size = 0.7* nrow(allGenres))
+# # Use the large partition to training - 70
+# train <- allGenres[index,]
+# train <- train[which(!train$genretype=='NA'),]
+# summary(train)
+# summary(train$genretype)
+# # Use the small partition to test - 30
+# test <- allGenres[-index,]
+# test <- test[which(!test$genretype=='NA'),]
+# summary(test)
+
+
+
+library("splitstackshape")
+test<-stratified(allGenres,"genretype", size=.2)
+train<-setdiff(allGenres,test)
 train <- train[which(!train$genretype=='NA'),]
+test <- test[which(!test$genretype=='NA'),]
 summary(train)
 summary(train$genretype)
-# Use the small partition to test - 30
-test <- allGenres[-index,]
-test <- test[which(!test$genretype=='NA'),]
+
 summary(test)
+
 ```
 
 ```{r}
@@ -59,19 +72,20 @@ library(rpart.plot)
 #Model classfication of train
 #tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness-Class-genretype
 set.seed(7)
-lvaFormula = Class ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+valence+instrumentalness+Class+genretype
+lvaFormula = Class ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+valence+instrumentalness-Class-genretype
 
-trainTree = rpart(lvaFormula, data = train, method = "class")
+trainTree = rpart(lvaFormula, data = train, method = "class", cp=0)
 
 #Plotting the tree of train
+plotcp(trainTree)
 plot(trainTree, compress=TRUE, uniform=TRUE)
 text(trainTree,use.n = T,all=T,cex=.7, pretty=0, xpd=TRUE, digits = 6)
 prp(trainTree, extra=101)
 # Visualize the decision tree with rpart.plot
 rpart.plot(trainTree, box.palette="RdBu", shadow.col="gray", nn=TRUE)
 #Test errors of train tree
-pred <- predict(trainTree, train, type = "class")
-mConfusion <- table(train$genretype, pred)
+pred <- predict(trainTree, test, type = "class")
+mConfusion <- table(test$genretype, pred)
 print(mConfusion)
 
 #Test Accuracy of model
@@ -101,7 +115,7 @@ pred <- predict(trainTree, test, type = "class")
   
   Acc <- (mConfusion[1,1]+mConfusion[2,2]+mConfusion[3,3]+mConfusion[4,4]+mConfusion[5,5]+mConfusion[6,6]+mConfusion[7,7]+mConfusion[8,8]+mConfusion[9,9]+mConfusion[10,10])/sum(mConfusion)
   print("Acc")
-  print(TrainAcc)
+  print(Acc)
   
   TrainErr <- 1 - Acc
   print("Err")
