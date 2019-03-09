@@ -1,0 +1,20 @@
+In the following charts, where we can see the possible correlation of features, precisely between the amplitude(loudness) and energy. These charts \ref{fig:loudnessEnergyCorr} and \ref{fig:pairschartOfMulticorr} can be useful for adjustment of parameter or creation of another variables, therefore improving our SVM Model.  We are noticed that there a strong group of possible Rock songs, when energy is greater then 0.80 and loudness is around -7. 
+\begin{center}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale =0.5]{images/loudnessEnergyCorr.png}\\[0.5 cm]
+    \caption{Energy vs Loudness Correlation.}
+    \label{fig:loudnessEnergyCorr}
+\end{figure}
+\end{center}
+\FloatBarrier
+
+\begin{center}
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale =0.5]{images/pairschartOfMulticorr.png}\\[0.5 cm]
+    \caption{Features Correlation in test set.}
+    \label{fig:pairschartOfMulticorr}
+\end{figure}
+\end{center}
+\FloatBarrier

@@ -1,3 +1,39 @@
+---
+title: "Genre DEMO:SVM Radial"
+output: html_notebook
+---
+
+This is the demo for solve Genre problematic. In order to well understand it, this file was resumed to only show up the data partition and model test.
+
+About this set:
+- Multi class only genres known;
+- "Others" contains among genres known, anothers genres that were not categorized.
+- Rock are songs that contains the aggretion of subgenre of Rock;
+- The data has not discretes values;
+- tempo, energy, danceability, etc are song features;
+- Duration is not take in consideration on thoses models;
+- We use 2% of Others, because it has 40k of songs. Thus we choose reduce others class.
+- We are using for test and train datasets random proportional partitions;
+
+Strategies:
+- Supervised Classification;
+
+Considerations:
+- test set has a size of 30%;
+- train set has a size of 70%;
+
+Models:
+- SVM Radial;
+- SVM Linear;
+- KNN;
+- Naive Bayne;
+
+Main goal of the best model:
+- Classify/Predict new instances using these models;
+- Find the must importance features;
+- Find the best model possible;
+
+
 ```{r}
 library(dplyr)
 library(quadprog)
@@ -5,7 +41,7 @@ library(sjlabelled)
 
 
 allGenres = read.csv(file = '~/Documents/dp_datamining/data/allGenresV2.csv', sep = ";", header = TRUE, na.strings = "?")
-othersG = read.csv(file = '~/Documents/dp_datamining/data/othersG.csv', sep = ";", header = TRUE, na.strings = "?")
+othersG = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
 
 
 
@@ -19,12 +55,15 @@ allGenres$typegroup <- NULL
 
 othersG$titlesong <- NULL
 othersG$typegroup <- NULL
-
+#Pick only Others
 othersG <- othersG[ sample( which(othersG$genretype== "Others"), round(0.02*length(which(othersG$genretype== "Others")))), ]
+othersG <- othersG[which(!othersG$genretype=='NA'),]
+
 
 summary(allGenres$genretype)
 summary(allGenres)
 summary(othersG)
+summary(othersG$genretype)
 
 ```
 
@@ -77,7 +116,7 @@ control <- trainControl(method="cv", number=10)
 metric <- "Accuracy"
 
 #+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
-formula_SVM <- genretype~ .
+formula_SVM <- genretype~ +tempo+energy+danceability+speechiness+accoustiness+loudness-duration+valence+instrumentalness
 
 
 #SVM Radial 
@@ -107,4 +146,9 @@ confusionMatrix(predRadial, test_allGenre$genretype )
 
 ```
 
+```{r}
+predRadial <- predict(svm_Radial_Grid, newdata = othersG)
+#Confusion Matrix and Statistics
+confusionMatrix(predRadial, othersG$genretype )
+```
 

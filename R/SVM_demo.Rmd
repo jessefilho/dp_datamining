@@ -1,29 +1,38 @@
 ---
-title: "Genre DEMO:SVM Radial"
+title: "Genre DEMO:SVM Radial OneVsOne"
 output: html_notebook
 ---
 
 This is the demo for solve Genre problematic. In order to well understand it, this file was resumed to only show up the data partition and model test.
 
 About this set:
-- Multi labels;
-- Not discrete values;
-- 
-
-
-Main goal of this model:
-- Classify new instances using these models;
-
-Strategies:
-- Find the must importantes features;
-- Find the best model possible;
-- Apply Supervised Classi fication;
-
+- Two class, Others and Rock;
+- "Others" contains among genres known, anothers genres that were not categorized.
+- Rock are songs that contains the aggretion of subgenre of Rock;
+- The data has not discretes values;
+- tempo, energy, danceability, etc are song features;
+- Duration is not take in consideration on thoses models;
+- We use 2% of Others, because it has 40k of songs. Thus we choose reduce others class.
+- We are using for test and train datasets random proportional partitions;
 
 Considerations:
+- test set has a size of 30%;
+- train set has a size of 70%;
 
-- "Others" contains among genres known, anothers genres do not categorized.
-- 
+Strategies:
+- One vs One;
+- Supervised Classification;
+
+Models:
+- SVM Radial;
+- SVM Linear;
+- KNN;
+- Naive Bayne;
+
+Main goal of the best model:
+- Classify/Predict new instances using these models;
+- Find the must importance features;
+- Find the best model possible;
 
 
 Vocabulary:
@@ -69,8 +78,12 @@ rockG <- rockG[!rockG$tempo <= 45.0 & !rockG$tempo >= 250.0,]
 #Remove column from this set
 rockG$titlesong <- NULL
 rockG$typegroup <- NULL
-# rockG$Class[rockG$genretype=='Others'] <- 0
-# rockG$Class[rockG$genretype=='Rock'] <- 1
+#rockG$duration <- NULL
+#rockG$loudness <- NULL
+#ockG$accoustiness <- NULL
+#rockG$energy <- NULL
+# rockG$Class[rockG$energy < 0.8] <- 0
+# rockG$Class[rockG$energy >= 0.8] <- 1
 
 #take a sample of genres "Others"
 #Only 1% from attributes with the label Others
@@ -205,7 +218,6 @@ summary(test_Rock)
 library(caret)
 library(lattice)
 library(ggplot2)
-library(caret)
 library(klaR)
 library(MASS)
 
@@ -214,8 +226,19 @@ control <- trainControl(method="cv", number=10)
 metric <- "Accuracy"
 
 #+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
-formula_SVM <- genretype~ +tempo+energy+danceability+speechiness+accoustiness+loudness-duration+valence+instrumentalness
+formula_SVM <- genretype~ .
 
+
+#SVM Linear 
+set.seed(89)
+fit.svmLinear_train <- train(formula_SVM,
+                             data = train_Rock,
+                             method = "svmLinear",
+                             trControl=control,
+                             preProcess = c("center", "scale"),
+                             tuneLength = 10)
+fit.svmLinear_train
+#plot(fit.svmLinear_train)
 
 #SVM Radial 
 set.seed(89)
@@ -228,7 +251,7 @@ fit.svmRadial_train <- train(formula_SVM,
 fit.svmRadial_train
 #plot(fit.svmRadial_train)
 
-#KNN Radial 
+#KNN 
 set.seed(89)
 fit.knn_train <- train(formula_SVM,
                              data = train_Rock,
@@ -239,7 +262,7 @@ fit.knn_train <- train(formula_SVM,
 fit.knn_train
 #plot(fit.knn_train)
 
-#NaiveBayne Radial 
+#NaiveBayne 
 set.seed(89)
 fit.nb_train <- train(formula_SVM,
                              data = train_Rock,
@@ -251,19 +274,9 @@ fit.nb_train
 #plot(fit.nb_train)
 
 
-#Neural Network
-set.seed(89)
-fit.mxnet_train <- train(formula_SVM,
-                             data = train_Rock,
-                             method = "mxnet",
-                             trControl=control,
-                             preProcess = c("center", "scale"),
-                             tuneLength = 10)
-fit.mxnet_train
-#plot(fit.mxnet_train)
-
 # summarize accuracy of models
-results <- resamples(list(mxnet=fit.mxnet_train,
+results <- resamples(list(svmLinear=fit.svmLinear_train,
+                          #mxnet=fit.mxnet_train,
                           nb=fit.nb_train, 
                           knn=fit.knn_train,
                           svmRadial=fit.svmRadial_train))
@@ -275,7 +288,7 @@ dotplot(results)
 ```
 ```{r}
 # estimate variable importance
-importance <- varImp(fit.knn_train, scale=FALSE)
+importance <- varImp(fit.svmRadial_train, scale=FALSE)
 # summarize importance
 print(importance)
 # plot importance
@@ -284,33 +297,57 @@ plot(importance)
 
 
 ```{r}
+library(MASS)
+library(plot3D)
 #Choose the best model
 bestModel <- fit.svmRadial_train
 
 test_pred <- predict(bestModel, newdata = test_Rock)
 confusionMatrix(test_pred, test_Rock$genretype )
-plot(bestModel,
-     plotType = "line",
-     metric = "Accuracy",
+#plot(bestModel,
+     #plotType = "line",
+     #metric = "Accuracy"
      #digits = getOption("digits") - 3,
      #xTrans = NULL,
      #nameInStrip = FALSE, ...
-     )
+     #)
 
 
+
+p=ggplot(test_Rock,
+         aes(y=test_Rock$energy,
+             x=test_Rock$accoustiness,
+             color=test_Rock$genretype ))
+p+geom_point(size=2)
+
+p=ggplot(test_Rock,
+         aes(y=test_Rock$energy,
+             x=test_Rock$loudness,
+             color=test_Rock$genretype ))
+p+geom_point(size=2)
+
+
+
+summary(test_Rock$genretype)
+my_cols <- c("#FC4E07","#00AFBB")  
+pairs(test_Rock[,2:9], pch = 20,  cex = 0.1,
+      col = my_cols[test_Rock$genretype],
+      lower.panel=NULL)
 ```
 
 ```{r}
+#Trying predict what song in other maybe is Rock
 summary(others_df$genretype)
 test_pred <- predict(fit.svmRadial_train, newdata = others_df)
-confusionMatrix(test_pred, others_df$genretype )
+confusionMatrix(test_pred,others_df$genretype )
 ```
 
 ```{r}
-
+#Trying to predict what song in other maybe is Rock. Doing that with a dataset of 50% others.
 others_df2 <- rockG[ sample( which(rockG$genretype== "Others"), round(0.5*length(which(rockG$genretype== "Others")))), ]
 others_df2$titlesong <- NULL
 others_df2$typegroup <- NULL
+
 
 #Reattach A small and random data set with Others
 tes_df2 <- bind_rows(others_df,rockG[which(rockG$genretype=='Rock'),])
@@ -319,57 +356,9 @@ tes_df2 <- bind_rows(others_df,rockG[which(rockG$genretype=='Rock'),])
 str(tes_df2)
 summary(tes_df2$genretype)
 
+#Then to double check, we create a second set that containts others and rock genre.
 othersG_pred <- predict(fit.svmRadial_train, newdata = tes_df2)
 confusionMatrix(othersG_pred, tes_df2$genretype )
 ```
 
-```{r}
-library(caret)
-#One vs One: Rock
-# Split between 80 and 30
-#index_Rock <- sample(1:nrow(rock_df),size = 0.7* nrow(rock_df))
-index_Rock2 <- createDataPartition(y = rock_df$genretype, p= 0.7, list = FALSE)
-# Use the large partition to training - 70
-train_Rock2 <- rock_df[index_Rock2,]
-# Use the small partition to test - 30
-test_Rock2 <- rock_df[-index_Rock2,]
-
-train_Rock2 <- train_Rock2[which(!train_Rock2$genretype=='NA'),]
-# str(train_Rock2)
-# summary(train_Rock2)
-# str(train_Rock2)
-# class(train_Rock2)
-
-test_Rock2 <- test_Rock[which(!test_Rock2$genretype=='NA'),]
-# str(test_Rock2)
-# summary(test_Rock2)
-# str(test_Rock2)
-# class(test_Rock2)
-
-# grid_radial <- expand.grid(sigma = c(0,
-#  0.05,0.1, 0.25, 0.5, 0.75,0.9),
-#  C = c(0,0.01, 0.05, 0.1, 0.25, 0.5, 0.75,
-#  1, 1.5, 2,5))
-
-set.seed(3233)
-controlGrid <- trainControl(method="cv", number=10)
-svm_Radial_Grid <- train(genretype ~.,
-                         data = train_Rock2,
-                         method = "svmRadial",
-                         trControl=controlGrid,
-                         preProcess = c("center", "scale"),
-                         #tuneGrid = grid_radial,
-                         tuneLength = 10)
-
-svm_Radial_Grid
-plot(svm_Radial_Grid)
-#plot(svm_Radial_Grid, train_Rock2)
-```
-
-```{r}
-test_pred_Radial_Grid <- predict(svm_Radial_Grid, newdata = test_Rock2)
-
-confusionMatrix(test_pred_Radial_Grid, test_Rock2$genretype )
-#Confusion Matrix and Statistics
-```
 

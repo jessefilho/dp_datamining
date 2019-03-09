@@ -3,8 +3,12 @@ library(dplyr)
 library(quadprog)
 library(sjlabelled)
 
-allGenres = read.csv(file = '~/Documents/dp_datamining/data/allGenresV3.csv', sep = ";", header = TRUE, na.strings = "?")
+allGenres = read.csv(file = '~/Documents/dp_datamining/data/rockPop.csv', sep = ";", header = TRUE, na.strings = "?")
+#allGenres = read.csv(file = '~/Documents/dp_datamining/data/allGenresV3.csv', sep = ";", header = TRUE, na.strings = "?")
 othersG = read.csv(file = '~/Documents/dp_datamining/data/othersG.csv', sep = ";", header = TRUE, na.strings = "?")
+
+
+#print(log(allGenres$loudness))
 
 #Remove "tempo equals 0, because is not relevante for now."
 allGenres <- allGenres[!allGenres$tempo <= 45.0 & !allGenres$tempo >= 250.0,]
@@ -13,34 +17,26 @@ othersG <- othersG[!othersG$tempo <= 45.0 & !othersG$tempo >= 250.0,]
 allGenres$titlesong <- NULL
 allGenres$typegroup <- NULL
 allGenres$duration <- NULL
+#allGenres$genretype <- NULL
 
 othersG$titlesong <- NULL
 othersG$typegroup <- NULL
 othersG$duration <- NULL
 
-allGenres$Class[allGenres$genretype=='Others'] <- 0
-allGenres$Class[allGenres$genretype=='Rock'] <- 1
-allGenres$Class[allGenres$genretype=='Pop'] <- 2
-allGenres$Class[allGenres$genretype=='Hip Hop'] <- 3
-allGenres$Class[allGenres$genretype=='Jazz'] <- 4
-allGenres$Class[allGenres$genretype=='Funk'] <- 5
-allGenres$Class[allGenres$genretype=='Folk'] <- 6
-allGenres$Class[allGenres$genretype=='Classical'] <- 7
-allGenres$Class[allGenres$genretype=='Blues'] <- 8
-allGenres$Class[allGenres$genretype=='Country'] <- 9
-allGenres$Class[allGenres$genretype=='Electronic'] <- 10
+#allGenres <- allGenres[which(allGenres$genretype=='Rock' | allGenres$genretype=='Pop'),]
+# allGenres$Class[allGenres$genretype=='Others'] <- 0
+# allGenres$Class[allGenres$genretype=='Rock'] <- 1
+# allGenres$Class[allGenres$genretype=='Pop'] <- 2
+# allGenres$Class[allGenres$genretype=='Hip Hop'] <- 0
+# allGenres$Class[allGenres$genretype=='Jazz'] <- 0
+# allGenres$Class[allGenres$genretype=='Funk'] <- 0
+# allGenres$Class[allGenres$genretype=='Folk'] <- 0
+# allGenres$Class[allGenres$genretype=='Classical'] <- 0
+# allGenres$Class[allGenres$genretype=='Blues'] <- 0
+# allGenres$Class[allGenres$genretype=='Country'] <- 0
+# allGenres$Class[allGenres$genretype=='Electronic'] <- 0
 
-othersG$Class[othersG$genretype=='Others'] <- 0
-othersG$Class[othersG$genretype=='Rock'] <- 1
-othersG$Class[othersG$genretype=='Pop'] <- 2
-othersG$Class[othersG$genretype=='Hip Hop'] <- 3
-othersG$Class[othersG$genretype=='Jazz'] <- 4
-othersG$Class[othersG$genretype=='Funk'] <- 5
-othersG$Class[othersG$genretype=='Folk'] <- 6
-othersG$Class[othersG$genretype=='Classical'] <- 7
-othersG$Class[othersG$genretype=='Blues'] <- 8
-othersG$Class[othersG$genretype=='Country'] <- 9
-othersG$Class[othersG$genretype=='Electronic'] <- 10
+
 
 #othersG <- othersG[ sample( which(othersG$genretype== "Others"), round(0.5*length(which(othersG$genretype== "Others")))), ]
 
@@ -50,9 +46,10 @@ summary(othersG)
 ```
 ```{r}
 library("splitstackshape")
-test<-stratified(allGenres,"genretype", size=.5)
+test<-stratified(allGenres,"genretype", size=.2)
 train<-setdiff(allGenres,test)
 train <- train[which(!train$genretype=='NA'),]
+train <- train[which(!train$genretype=='Jazz'),]
 test <- test[which(!test$genretype=='NA'),]
 summary(train)
 summary(train$genretype)
@@ -70,9 +67,14 @@ library(rpart.plot)
 #Model classfication of train
 #tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+duration+valence+instrumentalness-Class-genretype
 set.seed(7)
-lvaFormula = genretype ~ +tempo+energy+danceability+speechiness+accoustiness+loudness+loudness+valence+instrumentalness+Class-genretype
+lvaFormula = genretype~ .
+#train2=subset(train,select=-Class)
+train2=subset(train,select=-valence)
+train2=subset(train2,select=-danceability)
+train2=subset(train2,select=-speechiness)
+#train2=subset(train2,select=-loudness)
 
-trainTree = rpart(lvaFormula, data = train, method = "class")
+trainTree = rpart(lvaFormula, data = train2, method = "class")
 
 #Plotting the tree of train
 plotcp(trainTree)
@@ -86,7 +88,7 @@ pred <- predict(trainTree, test, type = "class")
 mConfusion <- table(test$genretype, pred)
 print(mConfusion)
 
-  Acc <- (mConfusion[1,1]+mConfusion[2,2]+mConfusion[3,3]+mConfusion[4,4]+mConfusion[5,5]+mConfusion[6,6]+mConfusion[7,7]+mConfusion[8,8]+mConfusion[9,9]+mConfusion[10,10])/sum(mConfusion)
+  Acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
   print("Acc")
   print(Acc)
   
@@ -96,26 +98,26 @@ print(mConfusion)
 ```
 
 ```{r}
-pred <- predict(trainTree, test, type = "class")
-  mConfusion <- table(test$genretype, pred)
-  print(mConfusion)
-  # #Test Accuracy of model
-  # acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
-  # print("acc")
-  # print(acc)
-  # 
-  # #Compute error rate
-  # Err <-(mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
-  # print("err")
-  # print(Err)
-  
-  Acc <- (mConfusion[1,1]+mConfusion[2,2]+mConfusion[3,3]+mConfusion[4,4]+mConfusion[5,5]+mConfusion[6,6]+mConfusion[7,7]+mConfusion[8,8]+mConfusion[9,9]+mConfusion[10,10])/sum(mConfusion)
-  print("Acc")
-  print(Acc)
-  
-  TrainErr <- 1 - Acc
-  print("Err")
-  print(TrainErr)
+# pred <- predict(trainTree, test, type = "class")
+#   mConfusion <- table(test$genretype, pred)
+#   print(mConfusion)
+#   # #Test Accuracy of model
+#   # acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+#   # print("acc")
+#   # print(acc)
+#   # 
+#   # #Compute error rate
+#   # Err <-(mConfusion[1,2]+mConfusion[2,1])/sum(mConfusion)
+#   # print("err")
+#   # print(Err)
+#   
+#   Acc <- (mConfusion[1,1]+mConfusion[2,2])/sum(mConfusion)
+#   print("Acc")
+#   print(Acc)
+#   
+#   TrainErr <- 1 - Acc
+#   print("Err")
+#   print(TrainErr)
   
 ```
 

@@ -3,66 +3,70 @@ title: "R Notebook - Discover of Data set genre"
 output: none
 ---
 
+We want to learn more about our dataset others.
+
 ```{r}
 #Load data
-genres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
+othersG = read.csv(file = '~/Documents/dp_datamining/data/othersG.csv',sep = ";", header = TRUE, na.strings = "?")
 #Remove lyrics from this set
-genres$titlesong <- NULL
+othersG$titlesong <- NULL
 #Remove "tempo equals 0, because is not relevante now."
-genres <- genres[!genres$tempo <= 45.0 & !genres$tempo >= 250.0,]
+othersG <- othersG[!othersG$tempo <= 45.0 & !othersG$tempo >= 250.0,]
 
 ```
 
 
 
 ```{r}
-
 #check dim()
-dim(genres)
-#Remove "Others from type of group, because is not relevante now."
-genres <- genres[!genres$typegroup == "Others",]
+dim(othersG)
 #summary data
-summary(genres)
+summary(othersG)
 #name
-names(genres)
+names(othersG)
+
+# VIM library for using 'aggr'
+library(VIM)
+# 'aggr' plots the amount of missing/imputed values in each column
+aggr(othersG)
+```
+
+
+```{r}
+library("splitstackshape")
+test<-stratified(othersG,"genretype", size=.5)
+
+train_kms<-setdiff(othersG,test)
+train_kms <- train_kms[which(!train_kms$genretype=='NA'),]
+summary(train_kms)
+summary(train_kms$genretype)
+
+test_kms <- test[which(!test$genretype=='NA'),]
+summary(test_kms)
+
+
+train_kms[,1:3]
 
 
 ```
 
 
+
+
+
+
 ```{r}
-library(dplyr)
-#take a sample of genres Others
-othersSample <- genres[sample(which(genres$genretype=='Others'), sample(500:800, 1) ), ]
-
-clusteringSample <- genres[sample(which(genres$genretype=='Others'), sample(1000:2000, 1) ), ]
-
-#Creating samples only with Rock
-rockSample <- genres[sample(which(genres$genretype=='Rock'), 561), ]
-#Creating samples only with Pop
-popSample <- genres[sample(which(genres$genretype=='Pop'), 298), ]
-#take an sample from all
-#test <- genres[sample(NROW(genres), NROW(othersSample)*(1 - 0.1)),] 
-
-#creating a data set without genre type Others
-dfToClustering <- genres[!genres$genretype=='Others',]
-#Reattach A small and random data set with Others
-mainDataset <- bind_rows(othersSample,dfToClustering)
-summary(mainDataset)
-class(mainDataset$genretype)
-
-```
-```{r}
-summary(clusteringSample)
+summary(train_kms)
 #Remove genretype from this set
-clusteringSample$genretype <- NULL
-clusteringSample$typegroup <- NULL
+train_kms$genretype <- NULL
+train_kms$typegroup <- NULL
 
 
 #Prepare Data Clustering
-mydata <- na.omit(clusteringSample) # listwise deletion of missing
+mydata <- na.omit(train_kms) # listwise deletion of missing
 mydata <- scale(mydata) # standardize variables
 
+set.seed(20)
 # Determine number of clusters
 wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
 for (i in 2:15) wss[i] <- sum(kmeans(mydata, 
@@ -70,13 +74,15 @@ for (i in 2:15) wss[i] <- sum(kmeans(mydata,
 plot(1:15, wss, type="b", xlab="Number of Clusters",
   ylab="Within groups sum of squares")
 
+set.seed(20)
 # K-Means Cluster Analysis
-fit <- kmeans(mydata, 3) # 3 cluster solution
+fit <- kmeans(mydata, 5) # 7 cluster solution
 # get cluster means 
 aggregate(mydata,by=list(fit$cluster),FUN=mean)
 # append cluster assignment
 mydata <- data.frame(mydata, fit$cluster)
 
+set.seed(20)
 # Ward Hierarchical Clustering
 d <- dist(mydata, method = "euclidean") # distance matrix
 fit <- hclust(d, method="ward") 
@@ -85,6 +91,7 @@ groups <- cutree(fit, k=3) # cut tree into 3 clusters
 # draw dendogram with red borders around the 3 clusters 
 rect.hclust(fit, k=3, border="red")
 
+set.seed(20)
 # Ward Hierarchical Clustering with Bootstrapped p values
 library(pvclust)
 fit <- pvclust(mydata, method.hclust="ward",
@@ -95,121 +102,55 @@ pvrect(fit, alpha=.95)
 
 ```
 
-```{r}
-# Model Based Clustering
-library(mclust)
-fit <- Mclust(mydata)
-plot(fit) # plot results 
-summary(fit) # display the best model
-```
+# ```{r}
+# # Model Based Clustering
+# library(mclust)
+# fit <- Mclust(mydata)
+# plot(fit) # plot results 
+# summary(fit) # display the best model
+# ```
 
 ```{r}
 # K-Means Clustering with 5 clusters
-fit <- kmeans(mydata, 5)
+fit <- kmeans(mydata[,1:4], 5)
 
+# translate into a two dimensions using multidimensional scaling
+
+## Original 
+# plot(mydata,
+#      ylim = c(-5,5),
+#      xlim = c(-5,5),
+#      col = 'green',
+#      main = 'Original Data')
+
+palette(c("#E41A1C", "#377EB8", "#4DAF4A", "#984EA3",  "#FF7F00", "#FFFF33", "#A65628", "#F781BF", "#999999", "#000000"))
+plot(mydata, col=fit$cluster, pch = 20, cex = 3)
+points(fit$centers, pch = 8, cex = 2)
 # Cluster Plot against 1st 2 principal components
-
+set.seed(20)
 # vary parameters for most readable graph
 library(cluster) 
-clusplot(mydata, fit$cluster, color=TRUE, shade=TRUE, 
-   labels=2, lines=0)
-
+clusplot(mydata,
+         fit$cluster,
+         main = 'Cusplot',
+         color=TRUE,
+         shade=TRUE,
+         labels=5,
+         lines=3)
+set.seed(20)
 # Centroid Plot against 1st 2 discriminant functions
 library(fpc)
 plotcluster(mydata, fit$cluster)
 ```
 
 
-```{r}
-#Remove typegroup from this set to test Clustering
-mainDataset$typegroup <- NULL
-
-#Explore data set o test Clustering
-class(mainDataset)
-names(mainDataset)
-str(mainDataset)
-```
 
 
-```{r}
-#Prepare Data to Data Classification
-#Class Rock and Other
-df_rockNothers <- bind_rows(othersSample,rockSample)
-df_genres <- bind_rows(othersSample,mainDataset)
-```
 
-```{r}
-# Prepare Data to Data Clusting
-# mydata <- na.omit(mainDataset) # listwise deletion of missing
-# mydata <- scale(mydata) # standardize variables
-```
-
-```{r}
-library(ggplot2)
-#Plotting the dependent variable distribution
-pl1 <- ggplot(df_rockNothers, aes(df_rockNothers$genretype))
-pl1 + geom_density(fill = "red", alpha = "0.7")
-```
-
-```{r}
-summary(df_rockNothers)
-
-```
-
-```{r}
-library(caTools)
-set.seed(100)
-df_rockNothers$genretype <- as.character(df_rockNothers$genretype)
-Storetypes <- subset(df_rockNothers, df_rockNothers$genretype != "")
-spl <- sample.split(Storetypes$genretype, SplitRatio = 0.8)
-Train <- subset(Storetypes, spl == TRUE)
-Test <- subset(Storetypes, spl == FALSE)
-###Using Random Forest for classification
-library(randomForest)
-Train$genretype <- as.factor(Train$genretype)
-Test$genretype <- as.factor(Test$genretype)
-###Creating the model
-SizeForest <- randomForest(genretype~ +tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness,
-                           data =  Train,nodesize = 25, ntree = 100)  
-###Predicting on the test set
-PredictForest <- predict(SizeForest, newdata = Train)
-#Confusion matrix for accuracy
-table(Train$genretype, PredictForest)
-```
-
-```{r}
-###Classifying the missing values in the dataset
-df_rockNothers$genretype <- predict(SizeForest, newdata =df_rockNothers)
-
-summary(df_rockNothers)
-```
-
-```{r}
-summary(df_genres)
-dim(df_genres)
-library(caTools)
-set.seed(100)
-df_genres$genretype <- as.character(df_genres$genretype)
-Storetypes <- subset(df_genres, df_genres$genretype != "")
-spl <- sample.split(Storetypes$genretype, SplitRatio = 0.8)
-Train <- subset(Storetypes, spl == TRUE)
-Test <- subset(Storetypes, spl == FALSE)
-###Using Random Forest for classification
-library(randomForest)
-Train$genretype <- as.factor(Train$genretype)
-Test$genretype <- as.factor(Test$genretype)
-###Creating the model
-SizeForest <- randomForest(genretype ~.-tempo -energy -danceability -speechiness -accoustiness -loudness -duration -valence -instrumentalness,
-                           data =  Train,nodesize = 25, ntree = 100)  
-###Predicting on the test set
-PredictForest <- predict(SizeForest, newdata = Test)
-#Confusion matrix for accuracy
-table(Test$genretype, PredictForest)
-```
 
 ```{r}
 #Remove typegroup from this set to test Clustering
-df_toCov <- genres
+df_toCov <- othersG
 df_toCov$typegroup <- NULL
 df_toCov$genretype <- NULL
 summary(df_toCov)
