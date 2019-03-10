@@ -17,6 +17,7 @@ othersG <- othersG[!othersG$tempo <= 45.0 & !othersG$tempo >= 250.0,]
 allGenres$titlesong <- NULL
 allGenres$typegroup <- NULL
 allGenres$duration <- NULL
+
 #allGenres$genretype <- NULL
 
 othersG$titlesong <- NULL
