@@ -3,6 +3,9 @@ title: "Genre DEMO:SVM Radial OneVsOne"
 output: html_notebook
 ---
 
+try it:
+https://www.youtube.com/watch?v=h5dda-gRpVk
+
 This is the demo for solve Genre problematic. In order to well understand it, this file was resumed to only show up the data partition and model test.
 
 About this set:
@@ -61,7 +64,7 @@ http://dataaspirant.com/2017/01/19/support-vector-machine-classifier-implementat
 
 
 http://cs229.stanford.edu/proj2016/report/RidleyDumovic-ClassificationOfArtistGenrethroughSupervisedLearning-report.pdf?fbclid=IwAR2WJEi8JdE2Ut_xwUe0WWZPFJUBxm16UE9vpkrXlnCF23Edeu2SMwzTQgU
-```{r}
+```{r warning=FALSE}
 library(dplyr)
 library(quadprog)
 library(sjlabelled)
@@ -245,6 +248,7 @@ set.seed(89)
 fit.svmRadial_train <- train(formula_SVM,
                              data = train_Rock,
                              method = "svmRadial",
+                             gamma=1,
                              trControl=control,
                              preProcess = c("center", "scale"),
                              tuneLength = 10)
@@ -284,6 +288,9 @@ summary(results)
 
 # compare accuracy of models
 dotplot(results)
+plot(fit.svmRadial_train,
+     plotType = "line",
+     metric = "Accuracy")
 
 ```
 ```{r}
@@ -302,15 +309,20 @@ library(plot3D)
 #Choose the best model
 bestModel <- fit.svmRadial_train
 
+
 test_pred <- predict(bestModel, newdata = test_Rock)
 confusionMatrix(test_pred, test_Rock$genretype )
-#plot(bestModel,
-     #plotType = "line",
-     #metric = "Accuracy"
-     #digits = getOption("digits") - 3,
-     #xTrans = NULL,
-     #nameInStrip = FALSE, ...
-     #)
+
+
+xgrid=expand.grid(energy=test_Rock$energy,loudness=test_Rock$loudness)  #generating grid points
+#lets plot the non linear decision boundary
+plot(xgrid,col=as.numeric(test_pred),pch=20,cex=0.5)
+points(test_Rock$genretype,pch=19)
+
+
+
+plot(test_pred)
+
 
 
 
@@ -327,19 +339,20 @@ p=ggplot(test_Rock,
 p+geom_point(size=2)
 
 
-
-summary(test_Rock$genretype)
-my_cols <- c("#FC4E07","#00AFBB")  
-pairs(test_Rock[,2:9], pch = 20,  cex = 0.1,
-      col = my_cols[test_Rock$genretype],
-      lower.panel=NULL)
 ```
+```{r}
+summary(test_pred)
+my_cols <- c("#FC4E07","#00AFBB")  
+pairs(test_Rock[,2:6], pch = 20,  cex = 0.4,
+      col = my_cols[test_Rock$genretype])
+```
+
 
 ```{r}
 #Trying predict what song in other maybe is Rock
 summary(others_df$genretype)
-test_pred <- predict(fit.svmRadial_train, newdata = others_df)
-confusionMatrix(test_pred,others_df$genretype )
+pred <- predict(bestModel, newdata = others_df)
+confusionMatrix(pred,others_df$genretype )
 ```
 
 ```{r}
@@ -357,7 +370,7 @@ str(tes_df2)
 summary(tes_df2$genretype)
 
 #Then to double check, we create a second set that containts others and rock genre.
-othersG_pred <- predict(fit.svmRadial_train, newdata = tes_df2)
+othersG_pred <- predict(bestModel, newdata = tes_df2)
 confusionMatrix(othersG_pred, tes_df2$genretype )
 ```
 

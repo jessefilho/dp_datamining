@@ -49,17 +49,17 @@ genres <- genres[!genres$tempo <= 45.0 & !genres$tempo >= 250.0,]
 #Remove "Others from type of group, because is not relevante now."
 genres <- genres[!genres$typegroup == "Others",]
 
-# genres$Class[genres$genretype=='Others'] <- 'NotHaveGenre'
-# genres$Class[genres$genretype=='Rock'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Pop'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Hip Hop'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Jazz'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Funk'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Folk'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Classical'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Blues'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Country'] <- 'hasGenre'
-# genres$Class[genres$genretype=='Electronic'] <- 'hasGenre'
+genres$Class[genres$genretype=='Others'] <- 'NotHaveGenre'
+genres$Class[genres$genretype=='Rock'] <- 'hasGenre'
+genres$Class[genres$genretype=='Pop'] <- 'hasGenre'
+genres$Class[genres$genretype=='Hip Hop'] <- 'hasGenre'
+genres$Class[genres$genretype=='Jazz'] <- 'hasGenre'
+genres$Class[genres$genretype=='Funk'] <- 'hasGenre'
+genres$Class[genres$genretype=='Folk'] <- 'hasGenre'
+genres$Class[genres$genretype=='Classical'] <- 'hasGenre'
+genres$Class[genres$genretype=='Blues'] <- 'hasGenre'
+genres$Class[genres$genretype=='Country'] <- 'hasGenre'
+genres$Class[genres$genretype=='Electronic'] <- 'hasGenre'
 
 #Create variables of genres
 # genres$Others[genres$genretype=='Others'] <- 1
@@ -119,8 +119,27 @@ dataset_withoutOthers <- genres[!genres$genretype=='Others',]
 genres_ToSplit <- bind_rows(idx_others,dataset_withoutOthers)
 
 summary(genres_ToSplit)
+class(genres_ToSplit$genretype)
 ```
 
+```{r}
+library(caret)
+plot(genres_ToSplit$genretype, type = "l", col = "blue", lwd = 1,
+     main = "rpois(100, lambda = 5)")
+
+library(ggplot2)
+# Dot plot basique
+p<-ggplot(genres_ToSplit, aes(x=genres_ToSplit$genretype, y=genres_ToSplit$Class)) + 
+  geom_dotplot(binaxis='y', stackdir='center', stackratio=10.0, dotsize=0.2)
+p
+# Tourner dot plot
+p + coord_flip()
+# 
+
+# Boxplot of MPG by Car Cylinders 
+boxplot(mpg~cyl,data=mtcars, main="Songs Features", 
+   xlab="Genres", ylab="Tempo Per Song")
+```
 
 
 2. Split data in 2 dataset:
