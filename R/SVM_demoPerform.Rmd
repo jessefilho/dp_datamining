@@ -1,0 +1,156 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(dplyr)
+library(quadprog)
+library(sjlabelled)
+
+#Loar dataset
+popG = read.csv(file = '~/Documents/dp_datamining/data/popSongs.csv', sep = ";", header = TRUE, na.strings = "?")
+#Remove column that we will not use
+popG$artist_id_spotify <- NULL
+popG$album_id <- NULL
+popG$track_id <- NULL
+popG$track_id <- NULL
+popG$date_release <- NULL
+popG$album_name <- NULL
+popG$date_popularity <- NULL
+popG$track_name <- NULL
+popG$genreOriginal <- NULL
+popG$album_name <- NULL
+popG$artist_name <- NULL
+
+#take a sample of genres "Others"
+#Only 1% from attributes with the label Others
+others_df <- popG[ sample( which(popG$genre== "Others"), round(0.02*length(which(popG$genre== "Others")))), ]
+
+pop_G <- popG[which(popG$genre=='pop'),]
+#Reattach A small and random data set with Others
+pop_G <- bind_rows(others_df,pop_G)
+
+
+
+str(pop_G)
+class(pop_G)
+summary(pop_G)
+```
+
+```{r}
+library(MASS)
+library(lattice)
+library(ggplot2)
+
+my_cols <- c("#FC4E07","#00AFBB")  
+pairs(pop_G[,2:14], pch = 20,  cex = 0.4,
+      col = my_cols[pop_G$genre])
+```
+```{r}
+library("splitstackshape")
+test<-stratified(pop_G,"genre", size=.5)
+
+train<-setdiff(pop_G,test)
+train <- train[which(!train$genre=='NA'),]
+summary(train)
+summary(train$genre)
+
+test <- test[which(!test$genre=='NA'),]
+summary(test)
+```
+```{r}
+library(caret)
+library(lattice)
+library(ggplot2)
+library(klaR)
+library(MASS)
+
+# Run algorithms using 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+TrainCtrl1 <- trainControl(method = "repeatedcv", number = 5,repeats=5,verbose = FALSE)
+
+#+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
+formula_SVM <- genre~ .
+
+
+# #SVM Linear 
+# set.seed(89)
+# fit.svmLinear_train <- train(formula_SVM,
+#                              data = train,
+#                              method = "svmLinear",
+#                              trControl=control,
+#                              preProcess = c("center", "scale"),
+#                              tuneLength = 10)
+# fit.svmLinear_train
+# #plot(fit.svmLinear_train)
+
+#SVMgrid <- expand.grid(sigma = c(0.05,0.0456,0.0577,1), C = c(0.5,0.6,0.7,1,1.5,1.596,1.65,1.89,1.95,2,2.2,2.44))
+SVMgrid <- expand.grid(sigma = c(0.0456), C = c(1.95))
+
+#SVM Radial 
+set.seed(89)
+fit.svmRadial_train <- train(formula_SVM,
+                             data = train,
+                             method = "svmRadial",
+                             gamma= 1,
+                             trControl=TrainCtrl1,
+                             tuneGrid = SVMgrid,
+                             preProcess = c("YeoJohnson", "scale"),
+                             tuneLength = 10)
+fit.svmRadial_train
+#plot(fit.svmRadial_train)
+
+
+```
+```{r}
+# compare accuracy of models
+dotplot(results)
+plot(fit.svmRadial_train,
+     plotType = "line",
+     metric = "Accuracy")
+```
+
+```{r}
+# estimate variable importance
+importance <- varImp(fit.svmRadial_train, scale=FALSE)
+# summarize importance
+print(importance)
+# plot importance
+plot(importance)
+```
+
+```{r}
+library(MASS)
+library(plot3D)
+#Choose the best model
+bestModel <- fit.svmRadial_train
+test_pred <- predict(bestModel, newdata = test)
+
+confusionMatrix(test_pred, test$genre)
+```
+```{r}
+xgrid=expand.grid(energy=test$energy,valence=test$valence)  #generating grid points
+#lets plot the non linear decision boundary
+plot(xgrid,col=as.numeric(test_pred),pch=15,cex=0.2)
+```
+
+
+```{r}
+
+pop_G$genre <- NULL
+x <- pop_G
+summary(x)
+# x est une variable de type matrix ou data.frame
+cor(x, method = c("pearson", "kendall", "spearman"))
+
+mcor <- cor(x)
+
+library(corrplot)
+#https://cran.r-project.org/web/packages/corrplot/vignettes/corrplot-intro.html
+## corrplot 0.84 loaded
+M <- cor(x)
+corrplot(M, method = "circle")
+```
+
