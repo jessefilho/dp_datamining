@@ -2,11 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="e00eee73-698a-4d28-b23c-cd4f10df3d20" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/transformerGenres.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../R/SVM_demo.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/../R/SVM_demo.Rmd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../R/SVM_demo.nb.html" beforeDir="false" afterPath="$PROJECT_DIR$/../R/SVM_demo.nb.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../R/demo_genresmodel.Rmd" beforeDir="false" afterPath="$PROJECT_DIR$/../R/demo_genresmodel.Rmd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../R/demo_genresmodel.nb.html" beforeDir="false" afterPath="$PROJECT_DIR$/../R/demo_genresmodel.nb.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../R/SVM_demoPerform.nb.html" beforeDir="false" afterPath="$PROJECT_DIR$/../R/SVM_demoPerform.nb.html" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/venv/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -31,7 +29,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="375">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/genreExtraction.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="337">
@@ -43,24 +41,12 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/transformerGenres.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="147">
+            <state relative-caret-position="565">
               <caret line="102" column="38" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
             </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/popSongs.csv">
-          <provider selected="true" editor-type-id="csv-text-editor">
-            <state relative-caret-position="-300619">
-              <caret line="1" selection-start-line="1" selection-end-line="1" />
-            </state>
-          </provider>
-          <provider editor-type-id="csv-table-editor">
-            <state showInfoPanel="true" fixedHeaders="false" rowLines="3" />
           </provider>
         </entry>
       </file>
@@ -100,6 +86,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -111,7 +98,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -144,16 +130,18 @@
       <updated>1553687810570</updated>
       <workItem from="1553687811665" duration="729000" />
       <workItem from="1553688585249" duration="8243000" />
+      <workItem from="1553845362900" duration="22000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="8972000" />
+    <option name="totallyTimeSpent" value="8994000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1280" height="777" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.254886" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.25977197" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -182,10 +170,7 @@
     <option name="version" value="1" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/songs.csv">
-      <provider editor-type-id="text-editor" />
-      <provider selected="true" editor-type-id="csv-text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/songs.csv" />
     <entry file="file://$PROJECT_DIR$/songsFini.csv">
       <provider selected="true" editor-type-id="csv-text-editor">
         <state relative-caret-position="-7" />
@@ -203,19 +188,9 @@
     <entry file="file://$PROJECT_DIR$/songsBKP.csv">
       <provider selected="true" editor-type-id="csv-text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/genreExtraction.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="337">
-          <caret line="116" column="34" selection-start-line="116" selection-start-column="12" selection-end-line="116" selection-end-column="34" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/popSongs.csv">
       <provider selected="true" editor-type-id="csv-text-editor">
-        <state relative-caret-position="-300619">
+        <state relative-caret-position="15">
           <caret line="1" selection-start-line="1" selection-end-line="1" />
         </state>
       </provider>
@@ -225,8 +200,18 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/transformerGenres.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
+        <state relative-caret-position="565">
           <caret line="102" column="38" selection-start-line="102" selection-start-column="38" selection-end-line="102" selection-end-column="38" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/genreExtraction.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="337">
+          <caret line="116" column="34" selection-start-line="116" selection-start-column="12" selection-end-line="116" selection-end-column="34" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>

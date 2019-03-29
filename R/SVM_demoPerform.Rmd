@@ -65,28 +65,18 @@ library(lattice)
 library(ggplot2)
 library(klaR)
 library(MASS)
+library(dplyr)
 
 # Run algorithms using 10-fold cross validation
-control <- trainControl(method="cv", number=10)
-metric <- "Accuracy"
-TrainCtrl1 <- trainControl(method = "repeatedcv", number = 5,repeats=5,verbose = FALSE)
+#TrainCtrl <- trainControl(method="cv", number=10)
+TrainCtrl <- trainControl(method = "repeatedcv", number =10,repeats=5,verbose = FALSE)
+#TrainCtrl <- trainControl(method = "LOOCV", number = 5,verbose = FALSE)
 
 #+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
 formula_SVM <- genre~ .
+metric <- "Accuracy"
 
-
-# #SVM Linear 
-# set.seed(89)
-# fit.svmLinear_train <- train(formula_SVM,
-#                              data = train,
-#                              method = "svmLinear",
-#                              trControl=control,
-#                              preProcess = c("center", "scale"),
-#                              tuneLength = 10)
-# fit.svmLinear_train
-# #plot(fit.svmLinear_train)
-
-#SVMgrid <- expand.grid(sigma = c(0.05,0.0456,0.0577,1), C = c(0.5,0.6,0.7,1,1.5,1.596,1.65,1.89,1.95,2,2.2,2.44))
+#SVMgrid <- expand.grid(sigma = c(0.05,0.0456,0.05,0.06,0.07,0.08,1,1.5,2,3), C = c(0.5,0.6,0.7,1,1.5,1.596,1.65,1.89,1.95,2,2.2,2.5,3,3.4,4,5))
 SVMgrid <- expand.grid(sigma = c(0.0456), C = c(1.95))
 
 #SVM Radial 
@@ -103,14 +93,17 @@ fit.svmRadial_train
 #plot(fit.svmRadial_train)
 
 
+
+
 ```
 ```{r}
 # compare accuracy of models
-dotplot(results)
+#dotplot(results)
 plot(fit.svmRadial_train,
      plotType = "line",
      metric = "Accuracy")
 ```
+
 
 ```{r}
 # estimate variable importance
@@ -130,11 +123,7 @@ test_pred <- predict(bestModel, newdata = test)
 
 confusionMatrix(test_pred, test$genre)
 ```
-```{r}
-xgrid=expand.grid(energy=test$energy,valence=test$valence)  #generating grid points
-#lets plot the non linear decision boundary
-plot(xgrid,col=as.numeric(test_pred),pch=15,cex=0.2)
-```
+
 
 
 ```{r}

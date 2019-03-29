@@ -71,6 +71,7 @@ library(sjlabelled)
 #Load data
 #genres = read.csv(file = '~/Documents/dp_datamining/data/dataGenre.csv', header = TRUE, na.strings = "?")
 
+
 rockG = read.csv(file = '~/Documents/dp_datamining/data/rockG.csv', sep = ";", header = TRUE, na.strings = "?")
 #popG = read.csv(file = '~/Documents/dp_datamining/data/popG.csv', sep = ";", header = TRUE, na.strings = "?")
 #electronicG = read.csv(file = '~/Documents/dp_datamining/data/electronicG.csv', sep = ";", header = TRUE, na.strings = "?")
