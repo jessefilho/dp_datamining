@@ -60,6 +60,9 @@ test <- test[which(!test$genre=='NA'),]
 summary(test)
 ```
 ```{r}
+# Load libraries
+library(mlbench)
+library(caretEnsemble)
 library(caret)
 library(lattice)
 library(ggplot2)
@@ -68,24 +71,27 @@ library(MASS)
 library(dplyr)
 
 # Run algorithms using 10-fold cross validation
-#TrainCtrl <- trainControl(method="cv", number=10)
-TrainCtrl <- trainControl(method = "repeatedcv", number =10,repeats=5,verbose = FALSE)
-#TrainCtrl <- trainControl(method = "LOOCV", number = 5,verbose = FALSE)
+#control <- trainControl(method="cv", number=10)
+#control <- trainControl(method="boot", number=100)
+control <- trainControl(method="repeatedcv", number=10, repeats=3, savePredictions=TRUE, classProbs=TRUE)
+#control <- trainControl(method="repeatedcv",number=10,repeats=3,savePredictions='final')
+#control <- trainControl(method = "LOOCV", number = 5,verbose = FALSE)
 
 #+tempo+energy+danceability+speechiness+accoustiness+loudness+duration+valence+instrumentalness
 formula_SVM <- genre~ .
 metric <- "Accuracy"
-
-#SVMgrid <- expand.grid(sigma = c(0.05,0.0456,0.05,0.06,0.07,0.08,1,1.5,2,3), C = c(0.5,0.6,0.7,1,1.5,1.596,1.65,1.89,1.95,2,2.2,2.5,3,3.4,4,5))
+seed <- 7
+#SVMgrid <- expand.grid(sigma = c(0.05,0.0456,0.05,0.06,0.07,0.08,1,1.5,2,3,6,9,12), C = c(0.5,0.6,0.7,1,1.5,1.596,1.65,1.89,1.95,2,2.2,2.5,3,3.4,4,5,7,9,12))
 SVMgrid <- expand.grid(sigma = c(0.0456), C = c(1.95))
-
-#SVM Radial 
-set.seed(89)
+```
+```{r}
+#SVM Radial Tunned
+set.seed(seed)
 fit.svmRadial_train <- train(formula_SVM,
                              data = train,
                              method = "svmRadial",
                              gamma= 1,
-                             trControl=TrainCtrl1,
+                             trControl=control,
                              tuneGrid = SVMgrid,
                              preProcess = c("YeoJohnson", "scale"),
                              tuneLength = 10)
@@ -93,9 +99,90 @@ fit.svmRadial_train
 #plot(fit.svmRadial_train)
 
 
+```
 
+```{r}
+# Example of Stacking algorithms
+# create submodels
+
+algorithmList <- c('lda', 'rpart', 'glm', 'knn', 'svmRadial','rf')
+set.seed(seed)
+models <- caretList(formula_SVM,
+                    data=train,
+                    trControl=control,
+                    methodList=algorithmList)
+
+results <- resamples(models)
+summary(results)
+dotplot(results)
+```
+
+```{r}
+# stack using random forest
+set.seed(seed)
+stack.rf <- caretStack(models,
+                       method="rf",
+                       metric=metric,
+                       gamma=0,
+                       preProcess = c("YeoJohnson", "scale"),
+                      tuneLength = 5,
+                       trControl=control)
+print(stack.rf)
 
 ```
+
+
+
+```{r}
+#Boosting approach
+# C5.0
+set.seed(seed)
+fit.c50 <- train(formula_SVM,
+                 data=train,
+                 method="C5.0",
+                 metric=metric,
+                 trControl=control,
+                 verbose=FALSE)
+
+# Stochastic Gradient Boosting
+set.seed(seed)
+fit.gbm <- train(formula_SVM, data=train, method="gbm", metric=metric, trControl=control, verbose=FALSE)
+
+# AdaBoost Classification Trees
+set.seed(seed)
+fit.LogitBoost <- train(formula_SVM, data=train, method="LogitBoost", metric=metric, trControl=control, verbose=FALSE)
+#Boosted Logistic Regression
+set.seed(seed)
+fit.adaboost <- train(formula_SVM, data=train, method="adaboost", metric=metric, trControl=control, verbose=FALSE)
+
+# summarize results
+boosting_results <- resamples(list(c5.0=fit.c50,
+                                   gbm=fit.gbm,
+                                   LogitBoost=fit.LogitBoost,
+                                   adaboost=fit.adaboost,
+                                   svmRadial=fit.svmRadial_train))
+summary(boosting_results)
+dotplot(boosting_results)
+```
+
+
+```{r}
+# Bagged CART
+set.seed(seed)
+fit.treebag <- train(formula_SVM, data=train,gamma=1, method="treebag", metric=metric, trControl=control)
+# Random Forest
+set.seed(seed)
+fit.rf <- train(formula_SVM, data=train,gamma=1, method="rf", metric=metric, trControl=control)
+
+
+# summarize results
+bagging_results <- resamples(list(treebag=fit.treebag,
+                                  rf=fit.rf,
+                                  svmRadial=fit.svmRadial_train))
+summary(bagging_results)
+dotplot(bagging_results)
+```
+
 ```{r}
 # compare accuracy of models
 #dotplot(results)
@@ -119,9 +206,19 @@ library(MASS)
 library(plot3D)
 #Choose the best model
 bestModel <- fit.svmRadial_train
-test_pred <- predict(bestModel, newdata = test)
+test_pred1 <- predict(bestModel, newdata = test) 
+confusionMatrix(test_pred1, test$genre)
 
-confusionMatrix(test_pred, test$genre)
+test_pred2 <- predict(stack.rf, newdata = test)
+confusionMatrix(test_pred2, test$genre)
+
+test_pred3 <- predict(fit.gbm, newdata = test)
+confusionMatrix(test_pred3, test$genre)
+
+test_pred4 <- predict(fit.rf, newdata = test)
+confusionMatrix(test_pred4, test$genre)
+
+
 ```
 
 
